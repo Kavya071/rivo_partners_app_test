@@ -1,0 +1,34 @@
+The mobile app is missing many features and has UI issues. I have the complete working PWA codebase 
+in this same repo at /frontend/src/. That PWA is the source of truth.
+
+Go through EVERY file in /frontend/src/screens/ and /frontend/src/components/ and /frontend/src/lib/ 
+and make the mobile app match the PWA exactly. Specifically:
+
+1. STUDY these PWA screen files and replicate ALL their functionality:
+   - /frontend/src/screens/LandingScreen.tsx — referral code resolution, UTM tracking, WhatsApp picker (personal vs business), sign-in vs new user flow
+   - /frontend/src/screens/WhatsAppListeningScreen.tsx — auto-open WhatsApp, polling with visibility change detection, verify link handling
+   - /frontend/src/screens/HomeScreen.tsx — earnings display, commission range badge (0.45%-0.60%), dynamic banners from API, complete profile nudge
+   - /frontend/src/screens/LeadSubmissionScreen.tsx — real-time commission calculator, 11 country codes with digit validation, self-referral prevention
+   - /frontend/src/screens/ClientsScreen.tsx — debounced search, 8 status colors and labels, commission display
+   - /frontend/src/screens/NetworkScreen.tsx — real referral code from API, native share with config message, referred agents with deal count and bonus
+   - /frontend/src/screens/ProfileScreen.tsx — edit toggle, agent type dropdown with conditional RERA field, Google OAuth, push notification toggle, sign out, delete with confirmation
+   - /frontend/src/screens/ReferralBonusScreen.tsx — bonus timeline visualization, share CTA
+   - /frontend/src/screens/ReferralSuccessScreen.tsx — animated checkmark, WhatsApp update info
+   - /frontend/src/screens/ReferralInfoScreen.tsx — full referral program explainer
+
+2. STUDY these PWA lib files and replicate the logic:
+   - /frontend/src/lib/api.ts — all API endpoints and error handling
+   - /frontend/src/lib/auth.tsx — auth context with token persistence, refreshUser, logout cleanup
+   - /frontend/src/lib/whatsapp.ts — WhatsApp deep link handling, personal vs business
+   - /frontend/src/config.ts — config loading from backend, commission rates, bonus amounts, share messages
+
+3. STUDY these PWA component files and replicate the design:
+   - /frontend/src/components/Layout.tsx — bottom nav styling, active tab colors
+   - /frontend/src/components/ui/Button.tsx — all button variants (primary, secondary, outline, ghost, whatsapp)
+   - /frontend/src/components/ui/Input.tsx — input styling with labels and errors
+   - /frontend/src/components/ui/WhatsAppShareSheet.tsx — bottom sheet picker for personal vs business WhatsApp
+   - /frontend/src/components/InstallPrompt.tsx — not needed for mobile, skip this one
+
+4. FIX all the broken icons — they're showing as blank dark squares. Make sure every icon renders properly.
+
+The PWA at partners.rivo.ae is the gold standard. The mobile app should be a 1:1 feature match with native mobile adaptations. Read the actual code, don't guess.
