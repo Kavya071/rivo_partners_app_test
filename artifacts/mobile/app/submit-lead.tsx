@@ -42,10 +42,13 @@ export default function SubmitLeadScreen() {
     return (numericAmount * 0.45) / 100;
   }, [numericAmount]);
 
+  const sanitizedPhone = useMemo(() => {
+    return phone.replace(/\D/g, "");
+  }, [phone]);
+
   const isPhoneValid = useMemo(() => {
-    const digitsOnly = phone.replace(/\s/g, "");
-    return digitsOnly.length === selectedCountry.digits;
-  }, [phone, selectedCountry]);
+    return sanitizedPhone.length === selectedCountry.digits;
+  }, [sanitizedPhone, selectedCountry]);
 
   const canSubmit =
     clientName.trim().length > 0 &&
@@ -59,7 +62,7 @@ export default function SubmitLeadScreen() {
     try {
       await ingestClient({
         client_name: clientName.trim(),
-        client_phone: `${selectedCountry.code}${phone.replace(/\s/g, "")}`,
+        client_phone: `${selectedCountry.code}${sanitizedPhone}`,
         expected_mortgage_amount: numericAmount,
       });
       if (Platform.OS !== "web") {
@@ -164,14 +167,14 @@ export default function SubmitLeadScreen() {
             <TextInput
               style={[styles.textInput, styles.phoneInput]}
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={(text: string) => setPhone(text.replace(/\D/g, ""))}
               placeholder={`${selectedCountry.digits} digits`}
               placeholderTextColor={Colors.textMuted}
               keyboardType="phone-pad"
-              maxLength={selectedCountry.digits + 2}
+              maxLength={selectedCountry.digits}
             />
           </View>
-          {phone.length > 0 && !isPhoneValid && (
+          {sanitizedPhone.length > 0 && !isPhoneValid && (
             <Text style={styles.errorHelper}>
               Enter {selectedCountry.digits} digits for{" "}
               {selectedCountry.country}
