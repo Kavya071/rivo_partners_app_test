@@ -9,8 +9,7 @@ import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import * as Font from "expo-font";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Platform, useWindowDimensions, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -90,28 +89,18 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    ...Ionicons.font,
+    ...Feather.font,
+    ...MaterialCommunityIcons.font,
   });
 
-  const [iconsReady, setIconsReady] = useState(Platform.OS === "web");
-
   useEffect(() => {
-    if (Platform.OS === "web") return;
-    Font.loadAsync({
-      ...Ionicons.font,
-      ...Feather.font,
-      ...MaterialCommunityIcons.font,
-    })
-      .then(() => setIconsReady(true))
-      .catch(() => setIconsReady(true));
-  }, []);
-
-  useEffect(() => {
-    if ((fontsLoaded || fontError) && iconsReady) {
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError, iconsReady]);
+  }, [fontsLoaded, fontError]);
 
-  if ((!fontsLoaded && !fontError) || !iconsReady) return null;
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>
