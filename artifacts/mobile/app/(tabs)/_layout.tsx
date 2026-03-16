@@ -1,6 +1,6 @@
-import { Tabs, Redirect } from "expo-router";
+import { Tabs, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 
 import Colors from "@/constants/colors";
@@ -9,12 +9,14 @@ import { useAuth } from "@/context/AuthContext";
 export default function TabLayout() {
   const { isAuthenticated, isLoading } = useAuth();
 
-  if (isLoading) {
-    return null;
-  }
+  useEffect(() => {
+    if (!isAuthenticated && !isLoading) {
+      router.replace("/");
+    }
+  }, [isAuthenticated, isLoading]);
 
-  if (!isAuthenticated) {
-    return <Redirect href="/" />;
+  if (isLoading || !isAuthenticated) {
+    return null;
   }
 
   return (

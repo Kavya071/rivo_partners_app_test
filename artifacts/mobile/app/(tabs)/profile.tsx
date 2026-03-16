@@ -96,8 +96,12 @@ export default function ProfileScreen() {
     } catch (_e) {
       // ignore
     }
-    await signOut();
     router.replace("/");
+    try {
+      await signOut();
+    } catch (_e) {
+      // ignore
+    }
   };
 
   const handleDelete = async () => {
@@ -106,8 +110,12 @@ export default function ProfileScreen() {
     } catch (_e) {
       // ignore
     }
-    await signOut();
     router.replace("/");
+    try {
+      await signOut();
+    } catch (_e) {
+      // ignore
+    }
   };
 
   if (isLoading) {
