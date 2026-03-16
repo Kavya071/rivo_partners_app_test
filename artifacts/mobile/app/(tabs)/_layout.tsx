@@ -12,7 +12,11 @@ export default function TabLayout() {
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
 
-  if (!isLoading && !isAuthenticated) {
+  if (isLoading) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
     return <Redirect href="/" />;
   }
 
