@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -31,6 +31,7 @@ export default function WhatsAppListeningScreen() {
   }>();
   const { login } = useAuth();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [errorCount, setErrorCount] = useState(0);
 
   const pulseScale = useSharedValue(1);
   const pulseOpacity = useSharedValue(0.4);
@@ -64,8 +65,8 @@ export default function WhatsAppListeningScreen() {
           await login(result.token);
           router.replace("/(tabs)");
         }
-      } catch (e) {
-        console.error("Verification poll error:", e);
+      } catch (_e) {
+        setErrorCount((c) => c + 1);
       }
     }, 2000);
 
@@ -118,6 +119,15 @@ export default function WhatsAppListeningScreen() {
           <Animated.View style={[styles.dot, dotStyle]} />
           <Text style={styles.listeningText}>Listening for verification...</Text>
         </Animated.View>
+
+        {errorCount >= 5 && (
+          <View style={styles.errorBanner}>
+            <Ionicons name="alert-circle" size={18} color={Colors.danger} />
+            <Text style={styles.errorText}>
+              Having trouble connecting. Please check your internet and try again.
+            </Text>
+          </View>
+        )}
       </View>
 
       <Pressable
@@ -233,5 +243,23 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 16,
     color: Colors.whatsapp,
+  },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: Colors.danger + "12",
+    borderWidth: 1,
+    borderColor: Colors.danger + "30",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  errorText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: Colors.danger,
+    flex: 1,
+    lineHeight: 18,
   },
 });
