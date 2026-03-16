@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   Pressable,
   Platform,
   Share,
+  ScrollView,
 } from "react-native";
 import { router } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
@@ -35,8 +36,15 @@ export default function ReferralBonusScreen() {
   });
 
   const agentCode = agent?.agent_code || "";
-  const amounts = config.REFERRAL_BONUS.AMOUNTS;
-  const totalPotential = config.REFERRAL_BONUS.TOTAL_POTENTIAL;
+  const [activeTab, setActiveTab] = useState<"referrer" | "agent">("agent");
+
+  const referrerAmounts = config.REFERRAL_BONUS.AMOUNTS;
+  const referrerTotal = config.REFERRAL_BONUS.TOTAL_POTENTIAL;
+  const agentAmounts = config.NEW_AGENT_BONUS.AMOUNTS;
+  const agentTotal = config.NEW_AGENT_BONUS.TOTAL_POTENTIAL;
+
+  const amounts = activeTab === "referrer" ? referrerAmounts : agentAmounts;
+  const totalPotential = activeTab === "referrer" ? referrerTotal : agentTotal;
 
   const handleShare = async () => {
     const url = `https://partners.rivo.ae?ref=${agentCode}`;
@@ -67,60 +75,104 @@ export default function ReferralBonusScreen() {
         <Feather name="x" size={24} color={Colors.text} />
       </Pressable>
 
-      <Animated.View
-        entering={FadeInDown.duration(500)}
-        style={styles.content}
+      <ScrollView
+        style={styles.scrollArea}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Refer Agents</Text>
-        <Text style={styles.subtitle}>
-          Your network can get you started with Rivo.{"\n"}
-          <Text style={styles.subtitleBold}>
-            They close deals, you get paid.
+        <Animated.View entering={FadeInDown.duration(500)}>
+          <Text style={styles.title}>Earn Bonuses</Text>
+          <Text style={styles.subtitle}>
+            Earn bonuses as you grow with Rivo.{"\n"}
+            <Text style={styles.subtitleBold}>
+              Close deals and refer agents to maximize earnings.
+            </Text>
           </Text>
-        </Text>
 
-        <View style={styles.timeline}>
-          <View style={styles.timelineLine} />
-          {amounts.map((amount, i) => {
-            const isLast = i === amounts.length - 1;
-            return (
-              <View key={i} style={styles.timelineItem}>
-                <View
-                  style={[
-                    styles.timelineDot,
-                    isLast && styles.timelineDotActive,
-                  ]}
-                />
-                <View style={styles.timelineContent}>
-                  <Text
+          <View style={styles.tabRow}>
+            <Pressable
+              onPress={() => setActiveTab("agent")}
+              style={[
+                styles.tab,
+                activeTab === "agent" && styles.tabActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === "agent" && styles.tabTextActive,
+                ]}
+              >
+                Your Deals
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setActiveTab("referrer")}
+              style={[
+                styles.tab,
+                activeTab === "referrer" && styles.tabActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === "referrer" && styles.tabTextActive,
+                ]}
+              >
+                Referral Agents
+              </Text>
+            </Pressable>
+          </View>
+
+          <Text style={styles.sectionLabel}>
+            {activeTab === "agent"
+              ? "Milestone bonuses for your first deals"
+              : "Bonuses when agents you refer close deals"}
+          </Text>
+
+          <View style={styles.timeline}>
+            <View style={styles.timelineLine} />
+            {amounts.map((amount, i) => {
+              const isLast = i === amounts.length - 1;
+              return (
+                <View key={i} style={styles.timelineItem}>
+                  <View
                     style={[
-                      styles.timelineDeal,
-                      isLast && styles.timelineDealActive,
+                      styles.timelineDot,
+                      isLast && styles.timelineDotActive,
                     ]}
-                  >
-                    {ordinal(i + 1)} Deal
-                  </Text>
-                  <Text
-                    style={[
-                      styles.timelineAmount,
-                      isLast && styles.timelineAmountActive,
-                    ]}
-                  >
-                    AED {amount.toLocaleString()}
-                  </Text>
+                  />
+                  <View style={styles.timelineContent}>
+                    <Text
+                      style={[
+                        styles.timelineDeal,
+                        isLast && styles.timelineDealActive,
+                      ]}
+                    >
+                      {ordinal(i + 1)} Deal
+                    </Text>
+                    <Text
+                      style={[
+                        styles.timelineAmount,
+                        isLast && styles.timelineAmountActive,
+                      ]}
+                    >
+                      AED {amount.toLocaleString()}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            );
-          })}
-        </View>
+              );
+            })}
+          </View>
 
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Total Potential</Text>
-          <Text style={styles.totalValue}>
-            AED {totalPotential.toLocaleString()}
-          </Text>
-        </View>
-      </Animated.View>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Total Potential</Text>
+            <Text style={styles.totalValue}>
+              AED {totalPotential.toLocaleString()}
+            </Text>
+          </View>
+        </Animated.View>
+      </ScrollView>
 
       <View style={styles.bottomSection}>
         <Pressable
@@ -170,10 +222,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  content: {
+  scrollArea: {
     flex: 1,
-    justifyContent: "center",
-    gap: 8,
+  },
+  scrollContent: {
+    paddingBottom: 20,
+    paddingTop: 12,
   },
   title: {
     fontFamily: "Inter_700Bold",
@@ -186,11 +240,45 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: Colors.textSecondary,
     lineHeight: 28,
-    marginBottom: 32,
+    marginBottom: 28,
   },
   subtitleBold: {
     fontFamily: "Inter_600SemiBold",
     color: Colors.text,
+  },
+  tabRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 20,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  tabActive: {
+    backgroundColor: Colors.primary + "20",
+  },
+  tabText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 14,
+    color: Colors.textMuted,
+  },
+  tabTextActive: {
+    color: Colors.primary,
+    fontFamily: "Inter_600SemiBold",
+  },
+  sectionLabel: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginBottom: 24,
   },
   timeline: {
     position: "relative",

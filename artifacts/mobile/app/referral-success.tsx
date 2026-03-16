@@ -7,7 +7,7 @@ import {
   Platform,
 } from "react-native";
 import { router } from "expo-router";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
@@ -21,10 +21,16 @@ import Animated, {
 import * as Haptics from "expo-haptics";
 
 import Colors from "@/constants/colors";
+import { useConfig } from "@/context/ConfigContext";
+import {
+  getWhatsAppPref,
+  openWhatsAppChat,
+} from "@/lib/whatsapp";
 
 export default function ReferralSuccessScreen() {
   const insets = useSafeAreaInsets();
   const webBottomPad = Platform.OS === "web" ? 34 : 0;
+  const config = useConfig();
 
   const checkScale = useSharedValue(0);
   const circleScale = useSharedValue(0);
@@ -50,6 +56,20 @@ export default function ReferralSuccessScreen() {
   const checkStyle = useAnimatedStyle(() => ({
     transform: [{ scale: checkScale.value }],
   }));
+
+  const handleContactWhatsApp = async () => {
+    const pref = await getWhatsAppPref();
+    const waUrl =
+      pref === "business"
+        ? config.LINKS.WHATSAPP_BUSINESS
+        : config.LINKS.WHATSAPP_PERSONAL;
+    const phone = waUrl.replace("https://wa.me/", "");
+    await openWhatsAppChat(
+      phone,
+      "Hi, I just submitted a new client referral.",
+      pref || undefined,
+    );
+  };
 
   return (
     <View
@@ -77,7 +97,18 @@ export default function ReferralSuccessScreen() {
         </Animated.View>
       </View>
 
-      <Animated.View entering={FadeIn.delay(900).duration(400)}>
+      <Animated.View entering={FadeIn.delay(900).duration(400)} style={styles.bottomActions}>
+        <Pressable
+          onPress={handleContactWhatsApp}
+          style={({ pressed }) => [
+            styles.whatsappBtn,
+            pressed && styles.btnPressed,
+          ]}
+        >
+          <Ionicons name="logo-whatsapp" size={20} color="#fff" />
+          <Text style={styles.whatsappBtnText}>Chat on WhatsApp</Text>
+        </Pressable>
+
         <Pressable
           onPress={() => router.replace("/(tabs)")}
           style={({ pressed }) => [
@@ -128,12 +159,35 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     paddingHorizontal: 20,
   },
+  bottomActions: {
+    gap: 12,
+  },
+  whatsappBtn: {
+    backgroundColor: Colors.whatsapp,
+    borderRadius: 14,
+    height: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  whatsappBtnText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 16,
+    color: "#fff",
+  },
+  btnPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+  },
   doneBtn: {
-    backgroundColor: Colors.primary,
     borderRadius: 14,
     height: 52,
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
   },
   doneBtnPressed: {
     opacity: 0.85,
@@ -142,6 +196,6 @@ const styles = StyleSheet.create({
   doneBtnText: {
     fontFamily: "Inter_700Bold",
     fontSize: 16,
-    color: "#fff",
+    color: Colors.text,
   },
 });

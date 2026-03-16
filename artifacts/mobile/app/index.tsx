@@ -107,12 +107,17 @@ export default function LandingScreen() {
         isSignIn,
       );
 
+      const configUrl = isBusinessPick
+        ? config.LINKS.WHATSAPP_BUSINESS
+        : config.LINKS.WHATSAPP_PERSONAL;
+      const resolvedUrl = whatsapp_url || configUrl;
+
       await setVerifyCode(code);
-      await setPendingUrl(whatsapp_url);
+      await setPendingUrl(resolvedUrl);
 
       router.push({
         pathname: "/whatsapp-listening",
-        params: { code, whatsapp_url },
+        params: { code, whatsapp_url: resolvedUrl },
       });
     } catch (e) {
       console.error(e);
