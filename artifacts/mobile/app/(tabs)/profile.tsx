@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TextInput,
   Pressable,
   Platform,
@@ -13,7 +12,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 
 import Colors from "@/constants/colors";
 import { getMe, updateProfile, logout, deleteAccount } from "@/lib/api";
@@ -33,6 +34,7 @@ function getAgentTypeLabel(value: string): string {
 export default function ProfileScreen() {
   const { signOut } = useAuth();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   const { data: agent, isLoading } = useQuery({
     queryKey: ["agent-me"],
@@ -118,7 +120,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top > 0 ? insets.top + 8 : 48 }]}>
         <Text style={styles.headerTitle}>Profile</Text>
         {!isEditing && (
           <Pressable onPress={() => setIsEditing(true)}>
@@ -127,8 +129,10 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+      <KeyboardAwareScrollViewCompat
+        bottomOffset={20}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 96 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.avatarRow}>
@@ -136,7 +140,7 @@ export default function ProfileScreen() {
             <Ionicons name="person-outline" size={40} color="#A1A1AA" />
           </View>
           <View style={styles.avatarInfo}>
-            <Text style={styles.profileName}>
+            <Text style={styles.profileName} numberOfLines={1}>
               {agent?.name || "Partner"}
             </Text>
             <Text style={styles.profilePhone}>{agent?.phone || ""}</Text>
@@ -379,7 +383,7 @@ export default function ProfileScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollViewCompat>
     </View>
   );
 }
@@ -396,7 +400,6 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: "#000000",
     paddingHorizontal: 24,
-    paddingTop: 48,
     paddingBottom: 24,
     borderBottomWidth: 1,
     borderBottomColor: "#27272A",
@@ -417,7 +420,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: 96,
   },
   avatarRow: {
     flexDirection: "row",
@@ -441,6 +443,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     color: Colors.text,
+    flexShrink: 1,
   },
   profilePhone: {
     fontSize: 14,

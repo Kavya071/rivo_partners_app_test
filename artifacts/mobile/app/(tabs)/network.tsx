@@ -266,7 +266,7 @@ export default function NetworkScreen() {
                 ]}
               >
                 <View style={styles.agentInfo}>
-                  <Text style={styles.agentName}>{agent.name || "Agent"}</Text>
+                  <Text style={styles.agentName} numberOfLines={1}>{agent.name || "Agent"}</Text>
                   <Text style={styles.agentStat}>
                     Joined {formatDate(agent.created_at)} &middot;{" "}
                     {agent.deals_count}/
@@ -323,10 +323,11 @@ const styles = StyleSheet.create({
   },
   codeText: {
     fontFamily: "Inter_500Medium",
-    fontSize: 36,
+    fontSize: 28,
     color: Colors.text,
-    letterSpacing: 4,
+    letterSpacing: 3,
     marginBottom: 20,
+    flexShrink: 1,
   },
   shareBtn: {
     backgroundColor: "white",
@@ -368,11 +369,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginTop: 16,
+    flexWrap: "wrap",
   },
   knowMoreText: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
     color: "#00D084",
+    flexShrink: 1,
   },
   scrollBody: {
     flex: 1,
@@ -484,6 +487,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 15,
     color: Colors.text,
+    flexShrink: 1,
   },
   agentStat: {
     fontFamily: "Inter_400Regular",

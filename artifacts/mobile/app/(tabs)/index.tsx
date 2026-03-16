@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Linking,
   Image,
+  useWindowDimensions,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,9 +29,13 @@ function formatCurrency(val: number | string): string {
   return num.toLocaleString("en-AE");
 }
 
+const NARROW_BREAKPOINT = 360;
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const config = useConfig();
+  const { width: screenWidth } = useWindowDimensions();
+  const isNarrow = screenWidth < NARROW_BREAKPOINT;
 
   const {
     data: agent,
@@ -66,8 +71,8 @@ export default function HomeScreen() {
               {(agent?.name || agent?.phone || "?").charAt(0).toUpperCase()}
             </Text>
           </View>
-          <View>
-            <Text style={styles.greeting}>{firstName}</Text>
+          <View style={styles.greetingTextWrap}>
+            <Text style={styles.greeting} numberOfLines={1}>{firstName}</Text>
             <View style={styles.onlineRow}>
               <View style={styles.onlineDot} />
               <Text style={styles.onlineText}>Online</Text>
@@ -112,7 +117,7 @@ export default function HomeScreen() {
       >
         <Animated.View entering={FadeInDown.duration(500)} style={styles.actionsSection}>
           <Text style={styles.sectionTitle}>Actions</Text>
-          <View style={styles.actionsRow}>
+          <View style={[styles.actionsRow, isNarrow && styles.actionsRowStacked]}>
             <Pressable
               onPress={() => router.push("/submit-lead")}
               style={({ pressed }) => [
@@ -262,6 +267,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "500",
     color: "#FFFFFF",
+    flexShrink: 1,
   },
   onlineRow: {
     flexDirection: "row",
@@ -275,6 +281,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: "#00D084",
   },
+  greetingTextWrap: {
+    flexShrink: 1,
+    flex: 1,
+  },
   onlineText: {
     fontSize: 12,
     color: "#A1A1AA",
@@ -287,10 +297,11 @@ const styles = StyleSheet.create({
     color: "#A1A1AA",
   },
   totalPaidValue: {
-    fontSize: 48,
+    fontSize: 42,
     fontWeight: "500",
     color: "#FFFFFF",
     letterSpacing: -1,
+    flexShrink: 1,
   },
   statsRow: {
     flexDirection: "row",
@@ -323,6 +334,9 @@ const styles = StyleSheet.create({
   actionsRow: {
     flexDirection: "row",
     gap: 16,
+  },
+  actionsRowStacked: {
+    flexDirection: "column",
   },
   actionCard: {
     flex: 1,
@@ -358,11 +372,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     color: "#FFFFFF",
+    flexShrink: 1,
   },
   actionSub: {
     fontSize: 13,
     color: "#A1A1AA",
     marginTop: 4,
+    flexShrink: 1,
   },
   commissionBadge: {
     alignSelf: "flex-start",
@@ -403,6 +419,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#FFFFFF",
+    flexShrink: 1,
   },
   bannerSubtitle: {
     fontSize: 13,

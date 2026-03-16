@@ -309,6 +309,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "500",
     letterSpacing: 0.5,
+    flexShrink: 1,
+    maxWidth: "40%",
+    textAlign: "right",
   },
   rowBottom: {
     flexDirection: "row",
@@ -325,6 +328,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     color: "#D4D4D8",
+    flexShrink: 1,
   },
   commissionValue: {
     fontSize: 18,

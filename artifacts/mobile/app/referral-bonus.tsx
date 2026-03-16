@@ -175,9 +175,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: "Inter_700Bold",
-    fontSize: 36,
+    fontSize: 32,
     color: Colors.text,
     marginBottom: 12,
+    flexShrink: 1,
   },
   subtitle: {
     fontSize: 18,
@@ -251,8 +252,9 @@ const styles = StyleSheet.create({
   },
   timelineAmount: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 22,
+    fontSize: 20,
     color: Colors.text,
+    flexShrink: 1,
   },
   timelineAmountActive: {
     color: Colors.primary,
@@ -275,8 +277,9 @@ const styles = StyleSheet.create({
   },
   totalValue: {
     fontFamily: "Inter_700Bold",
-    fontSize: 28,
+    fontSize: 26,
     color: Colors.text,
+    flexShrink: 1,
   },
   bottomSection: {
     gap: 12,
@@ -318,6 +321,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 4,
     paddingBottom: 4,
+    flexWrap: "wrap",
   },
   knowMoreText: {
     fontFamily: "Inter_600SemiBold",

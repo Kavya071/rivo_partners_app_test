@@ -201,10 +201,11 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: "500",
     color: "#FFFFFF",
     marginBottom: 16,
+    flexShrink: 1,
   },
   subtitle: {
     fontSize: 18,
@@ -260,9 +261,10 @@ const styles = StyleSheet.create({
     color: "#A1A1AA",
   },
   bonusRowValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "500",
     color: "#FFFFFF",
+    flexShrink: 1,
   },
   bonusTotalRow: {
     flexDirection: "row",
@@ -279,9 +281,10 @@ const styles = StyleSheet.create({
     color: "#00D084",
   },
   bonusTotalValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: "#00D084",
+    flexShrink: 1,
   },
   bottomBar: {
     position: "absolute",

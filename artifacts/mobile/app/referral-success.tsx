@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Pressable,
   Platform,
+  ScrollView,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -44,11 +45,14 @@ export default function ReferralSuccessScreen() {
   }));
 
   return (
-    <View
-      style={[
-        styles.container,
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.scrollContent,
         { paddingBottom: insets.bottom + webBottomPad + 24 },
       ]}
+      bounces={false}
+      showsVerticalScrollIndicator={false}
     >
       <View style={styles.centerContent}>
         <Animated.View style={[styles.successCircle, circleStyle]}>
@@ -100,7 +104,7 @@ export default function ReferralSuccessScreen() {
           <Text style={styles.doneBtnText}>Done</Text>
         </Pressable>
       </Animated.View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -108,6 +112,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     justifyContent: "space-between",
   },

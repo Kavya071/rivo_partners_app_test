@@ -211,9 +211,9 @@ export default function LandingScreen() {
               <Animated.View style={[styles.referralDotPulse, pulseDotStyle]} />
               <View style={styles.referralDot} />
             </View>
-            <View>
+            <View style={{ flexShrink: 1 }}>
               <Text style={styles.referralLabel}>Referred by</Text>
-              <Text style={styles.referralNameText}>{referralName}</Text>
+              <Text style={styles.referralNameText} numberOfLines={1}>{referralName}</Text>
             </View>
           </View>
         )}
@@ -334,6 +334,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
+    flexWrap: "wrap",
+    gap: 8,
   },
   logoRow: {
     flexDirection: "row",
@@ -368,6 +370,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 10,
+    flexShrink: 1,
+    maxWidth: "60%",
   },
   referralDotContainer: {
     width: 10,
@@ -399,15 +403,17 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
     color: Colors.text,
+    flexShrink: 1,
   },
   heroSection: {
     gap: 12,
   },
   heroTitle: {
     fontFamily: "Inter_700Bold",
-    fontSize: 36,
+    fontSize: 32,
     color: Colors.text,
-    lineHeight: 44,
+    lineHeight: 40,
+    flexShrink: 1,
   },
   heroTitleGreen: {
     color: Colors.primary,
@@ -447,8 +453,9 @@ const styles = StyleSheet.create({
   },
   payoutAmount: {
     fontFamily: "Inter_700Bold",
-    fontSize: 48,
+    fontSize: 42,
     color: Colors.primary,
+    flexShrink: 1,
   },
   rateBadge: {
     backgroundColor: Colors.primary + "20",
@@ -509,6 +516,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 14,
     color: Colors.textSecondary,
+    flexShrink: 1,
   },
   termsLink: {
     color: Colors.primary,

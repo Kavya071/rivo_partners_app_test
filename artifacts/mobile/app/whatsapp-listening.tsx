@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Pressable,
   Platform,
+  ScrollView,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -163,11 +164,14 @@ export default function WhatsAppListeningScreen() {
   };
 
   return (
-    <View
+    <ScrollView
       style={[
         styles.container,
         { paddingTop: insets.top + webTopPad + 40 },
       ]}
+      contentContainerStyle={styles.scrollContent}
+      bounces={false}
+      showsVerticalScrollIndicator={false}
     >
       <Pressable onPress={() => router.back()} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color={Colors.text} />
@@ -214,7 +218,7 @@ export default function WhatsAppListeningScreen() {
         <Ionicons name="logo-whatsapp" size={20} color={Colors.whatsapp} />
         <Text style={styles.openAgainText}>Open WhatsApp again</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -222,6 +226,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     justifyContent: "space-between",
     paddingBottom: 40,
