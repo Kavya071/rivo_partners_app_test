@@ -1,16 +1,13 @@
-import { BlurView } from "expo-blur";
 import { Tabs, Redirect } from "expo-router";
-import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import Colors from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
 
 export default function TabLayout() {
   const { isAuthenticated, isLoading } = useAuth();
-  const isIOS = Platform.OS === "ios";
-  const isWeb = Platform.OS === "web";
 
   if (isLoading) {
     return null;
@@ -24,43 +21,34 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.tabIconDefault,
+        tabBarActiveTintColor: "#00D084",
+        tabBarInactiveTintColor: "#71717A",
         tabBarLabelStyle: {
           fontFamily: "Inter_500Medium",
           fontSize: 11,
         },
         tabBarStyle: {
-          position: "absolute",
-          backgroundColor: isIOS ? "transparent" : Colors.tabBar,
-          borderTopWidth: isWeb ? 1 : StyleSheet.hairlineWidth,
-          borderTopColor: Colors.border,
+          backgroundColor: "#000000",
+          borderTopWidth: 1,
+          borderTopColor: "#27272A",
           elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
         },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView
-              intensity={80}
-              tint="dark"
-              style={StyleSheet.absoluteFill}
-            />
-          ) : isWeb ? (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: Colors.tabBar },
-              ]}
-            />
-          ) : null,
+        tabBarBackground: () => (
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: "#000000" },
+            ]}
+          />
+        ),
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="home" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
           ),
         }}
       />
@@ -68,8 +56,8 @@ export default function TabLayout() {
         name="clients"
         options={{
           title: "Clients",
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="users" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "briefcase" : "briefcase-outline"} size={24} color={color} />
           ),
         }}
       />
@@ -77,8 +65,8 @@ export default function TabLayout() {
         name="network"
         options={{
           title: "Network",
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="share-2" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "people" : "people-outline"} size={24} color={color} />
           ),
         }}
       />
@@ -86,8 +74,8 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="user" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
           ),
         }}
       />

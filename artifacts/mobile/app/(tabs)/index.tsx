@@ -5,13 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  Platform,
   ActivityIndicator,
   RefreshControl,
   Linking,
+  Image,
 } from "react-native";
 import { router } from "expo-router";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -30,7 +30,6 @@ function formatCurrency(val: number | string): string {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const webTopPad = Platform.OS === "web" ? 67 : 0;
   const config = useConfig();
 
   const {
@@ -59,162 +58,107 @@ export default function HomeScreen() {
   const banners = config.HOME_BANNERS;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{
-        paddingTop: insets.top + webTopPad + 20,
-        paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 20,
-        paddingHorizontal: 20,
-      }}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefetching}
-          onRefresh={refetch}
-          tintColor={Colors.primary}
-        />
-      }
-    >
-      <Animated.View entering={FadeInDown.duration(500)}>
+    <View style={styles.container}>
+      <View style={[styles.stickyHeader, { paddingTop: insets.top > 0 ? insets.top : 48 }]}>
         <View style={styles.greetingRow}>
-          <View style={styles.greetingLeft}>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>
-                {(agent?.name || agent?.phone || "?").charAt(0).toUpperCase()}
-              </Text>
-            </View>
-            <View>
-              <Text style={styles.greeting}>{firstName}</Text>
-              <View style={styles.onlineRow}>
-                <View style={styles.onlineDot} />
-                <Text style={styles.onlineText}>Online</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </Animated.View>
-
-      <Animated.View entering={FadeInDown.delay(100).duration(500)}>
-        <View style={styles.earningsCard}>
-          <Text style={styles.earningsLabel}>Total Paid</Text>
-          <View style={styles.earningsRow}>
-            <Text style={styles.earningsCurrency}>AED</Text>
-            <Text style={styles.earningsAmount}>
-              {formatCurrency(totalEarned)}
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>
+              {(agent?.name || agent?.phone || "?").charAt(0).toUpperCase()}
             </Text>
           </View>
-          <View style={styles.earningsStats}>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Pending</Text>
-              <Text style={styles.statValue}>
-                AED {formatCurrency(pendingAmount)}
-              </Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Disbursals</Text>
-              <Text style={styles.statValue}>{disbursalsCount}</Text>
+          <View>
+            <Text style={styles.greeting}>{firstName}</Text>
+            <View style={styles.onlineRow}>
+              <View style={styles.onlineDot} />
+              <Text style={styles.onlineText}>Online</Text>
             </View>
           </View>
         </View>
-      </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(200).duration(500)}>
-        <Text style={styles.sectionTitle}>Actions</Text>
-        <View style={styles.actionsRow}>
-          <Pressable
-            onPress={() => router.push("/submit-lead")}
-            style={({ pressed }) => [
-              styles.actionCard,
-              styles.actionCardPrimary,
-              pressed && styles.actionPressed,
-            ]}
-          >
-            <View style={styles.actionIconPrimary}>
-              <Feather name="user-plus" size={22} color="#fff" />
-            </View>
-            <View style={styles.actionContent}>
+        <View style={styles.totalPaidSection}>
+          <Text style={styles.totalPaidLabel}>Total Paid</Text>
+          <Text style={styles.totalPaidValue}>
+            AED {totalEarned.toLocaleString()}
+          </Text>
+        </View>
+
+        <View style={styles.statsRow}>
+          <View>
+            <Text style={styles.statLabel}>PENDING</Text>
+            <Text style={styles.statValue}>
+              AED {formatCurrency(pendingAmount)}
+            </Text>
+          </View>
+          <View>
+            <Text style={styles.statLabel}>DISBURSALS</Text>
+            <Text style={styles.statValue}>{disbursalsCount}</Text>
+          </View>
+        </View>
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{
+          paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 20,
+        }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor={Colors.primary}
+          />
+        }
+      >
+        <Animated.View entering={FadeInDown.duration(500)} style={styles.actionsSection}>
+          <Text style={styles.sectionTitle}>Actions</Text>
+          <View style={styles.actionsRow}>
+            <Pressable
+              onPress={() => router.push("/submit-lead")}
+              style={({ pressed }) => [
+                styles.actionCard,
+                pressed && styles.actionPressed,
+              ]}
+            >
+              <View style={styles.actionIconWhite}>
+                <Ionicons
+                  name="arrow-forward"
+                  size={20}
+                  color="#000"
+                  style={{ transform: [{ rotate: "-45deg" }] }}
+                />
+              </View>
               <Text style={styles.actionTitle}>Submit Client</Text>
               <Text style={styles.actionSub}>
                 Earn ~AED {config.COMMISSION.AVG_PAYOUT.toLocaleString()}
               </Text>
               <View style={styles.commissionBadge}>
                 <Text style={styles.commissionBadgeText}>
-                  Earn {config.COMMISSION.MIN_PERCENT}%–{config.COMMISSION.MAX_PERCENT}% commission
+                  {config.COMMISSION.MIN_PERCENT}% - {config.COMMISSION.MAX_PERCENT}%
                 </Text>
               </View>
-            </View>
-          </Pressable>
+            </Pressable>
 
-          <Pressable
-            onPress={() => router.push("/(tabs)/network")}
-            style={({ pressed }) => [
-              styles.actionCard,
-              pressed && styles.actionPressed,
-            ]}
-          >
-            <View style={styles.actionIcon}>
-              <Ionicons name="people" size={22} color={Colors.primary} />
-            </View>
-            <Text style={styles.actionTitleDark}>Invite{"\n"}Agent</Text>
-            <Feather
-              name="arrow-right"
-              size={18}
-              color={Colors.textMuted}
-            />
-          </Pressable>
-        </View>
-      </Animated.View>
-
-      {(!agent?.is_profile_complete || !agent?.name || !agent?.agent_type) && (
-        <Animated.View entering={FadeInDown.delay(300).duration(500)}>
-          <Pressable
-            onPress={() => router.push("/(tabs)/profile")}
-            style={({ pressed }) => [
-              styles.profileNudge,
-              pressed && { opacity: 0.8 },
-            ]}
-          >
-            <View style={styles.profileNudgeContent}>
-              <Text style={styles.profileNudgeTitle}>Complete your profile</Text>
-              <Text style={styles.profileNudgeDesc}>
-                Add your name, type, and email.
+            <Pressable
+              onPress={() => router.push("/(tabs)/network")}
+              style={({ pressed }) => [
+                styles.actionCard,
+                pressed && styles.actionPressed,
+              ]}
+            >
+              <View style={styles.actionIconGreen}>
+                <Ionicons name="people" size={20} color="#fff" />
+              </View>
+              <Text style={styles.actionTitle}>Invite Agent</Text>
+              <Text style={styles.actionSub}>
+                Get AED {config.REFERRAL_BONUS.TOTAL_POTENTIAL.toLocaleString()} Bonus
               </Text>
-            </View>
-            <Feather name="chevron-right" size={20} color={Colors.textMuted} />
-          </Pressable>
+            </Pressable>
+          </View>
         </Animated.View>
-      )}
 
-      <Animated.View entering={FadeInDown.delay(350).duration(500)}>
-        <Pressable
-          onPress={() => router.push("/referral-bonus")}
-          style={({ pressed }) => [
-            styles.referralBonusCard,
-            pressed && { opacity: 0.8 },
-          ]}
-        >
-          <View style={styles.referralBonusIcon}>
-            <Ionicons name="gift" size={22} color={Colors.primary} />
-          </View>
-          <View style={styles.referralBonusContent}>
-            <Text style={styles.referralBonusTitle}>Referral Bonuses</Text>
-            <Text style={styles.referralBonusDesc}>
-              Earn up to AED {config.REFERRAL_BONUS.TOTAL_POTENTIAL.toLocaleString()} per agent
-            </Text>
-          </View>
-          <Feather name="chevron-right" size={18} color={Colors.textMuted} />
-        </Pressable>
-      </Animated.View>
-
-      {banners.length > 0 && (
-        <Animated.View entering={FadeInDown.delay(400).duration(500)}>
-          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Updates</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.bannersScroll}
-          >
+        {banners.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.bannersSection}>
             {banners.map((banner: HomeBanner) => (
               <Pressable
                 key={banner.id}
@@ -232,27 +176,51 @@ export default function HomeScreen() {
                   pressed && { opacity: 0.8 },
                 ]}
               >
-                {banner.icon ? (
-                  <View style={styles.bannerIconCircle}>
+                {banner.thumbnail ? (
+                  <Image
+                    source={{ uri: banner.thumbnail }}
+                    style={styles.bannerThumbnail}
+                    resizeMode="cover"
+                  />
+                ) : null}
+                <View style={styles.bannerContent}>
+                  {banner.icon ? (
                     <Text style={styles.bannerIcon}>{banner.icon}</Text>
-                  </View>
-                ) : null}
-                <Text style={styles.bannerTitle}>{banner.title}</Text>
-                {banner.subtitle ? (
-                  <Text style={styles.bannerSubtitle}>{banner.subtitle}</Text>
-                ) : null}
-                {banner.cta_text ? (
-                  <View style={styles.bannerCtaRow}>
+                  ) : null}
+                  <Text style={styles.bannerTitle}>{banner.title}</Text>
+                  {banner.subtitle ? (
+                    <Text style={styles.bannerSubtitle}>{banner.subtitle}</Text>
+                  ) : null}
+                  {banner.cta_text && banner.cta_link ? (
                     <Text style={styles.bannerCtaText}>{banner.cta_text}</Text>
-                    <Feather name="chevron-right" size={16} color={Colors.primary} />
-                  </View>
-                ) : null}
+                  ) : null}
+                </View>
               </Pressable>
             ))}
-          </ScrollView>
-        </Animated.View>
-      )}
-    </ScrollView>
+          </Animated.View>
+        )}
+
+        {agent?.is_profile_complete === false && (
+          <Animated.View entering={FadeInDown.delay(200).duration(500)}>
+            <Pressable
+              onPress={() => router.push("/(tabs)/profile")}
+              style={({ pressed }) => [
+                styles.profileNudge,
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              <View style={styles.profileNudgeContent}>
+                <Text style={styles.profileNudgeTitle}>Complete your profile</Text>
+                <Text style={styles.profileNudgeDesc}>
+                  Add your name, type, and email.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+            </Pressable>
+          </Animated.View>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -265,13 +233,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  greetingRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 28,
+  stickyHeader: {
+    backgroundColor: "#000000",
+    borderBottomWidth: 1,
+    borderBottomColor: "#27272A",
+    paddingHorizontal: 24,
+    paddingBottom: 24,
   },
-  greetingLeft: {
+  greetingRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
@@ -280,21 +249,19 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Colors.surface,
+    backgroundColor: "#27272A",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   avatarText: {
-    fontFamily: "Inter_600SemiBold",
     fontSize: 18,
-    color: Colors.text,
+    fontWeight: "500",
+    color: "#FFFFFF",
   },
   greeting: {
-    fontFamily: "Inter_600SemiBold",
     fontSize: 20,
-    color: Colors.text,
+    fontWeight: "500",
+    color: "#FFFFFF",
   },
   onlineRow: {
     flexDirection: "row",
@@ -306,252 +273,170 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.primary,
+    backgroundColor: "#00D084",
   },
   onlineText: {
-    fontFamily: "Inter_400Regular",
     fontSize: 12,
-    color: Colors.textMuted,
+    color: "#A1A1AA",
   },
-  earningsCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 28,
+  totalPaidSection: {
+    marginTop: 32,
   },
-  earningsLabel: {
-    fontFamily: "Inter_500Medium",
+  totalPaidLabel: {
     fontSize: 14,
-    color: Colors.textSecondary,
-    marginBottom: 8,
+    color: "#A1A1AA",
   },
-  earningsRow: {
+  totalPaidValue: {
+    fontSize: 48,
+    fontWeight: "500",
+    color: "#FFFFFF",
+    letterSpacing: -1,
+  },
+  statsRow: {
     flexDirection: "row",
-    alignItems: "baseline",
-    gap: 8,
-    marginBottom: 20,
-  },
-  earningsCurrency: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 18,
-    color: Colors.textSecondary,
-  },
-  earningsAmount: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 42,
-    color: Colors.text,
-  },
-  earningsStats: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingTop: 16,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: "center",
-    gap: 4,
-  },
-  statValue: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 16,
-    color: Colors.text,
+    gap: 32,
+    marginTop: 24,
   },
   statLabel: {
-    fontFamily: "Inter_400Regular",
     fontSize: 12,
-    color: Colors.textMuted,
+    color: "#71717A",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: Colors.border,
+  statValue: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: "#FFFFFF",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  actionsSection: {
+    padding: 24,
   },
   sectionTitle: {
-    fontFamily: "Inter_600SemiBold",
     fontSize: 18,
-    color: Colors.text,
-    marginBottom: 14,
+    fontWeight: "500",
+    color: "#FFFFFF",
+    marginBottom: 16,
   },
   actionsRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 16,
   },
   actionCard: {
     flex: 1,
     backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 18,
+    borderRadius: 8,
+    padding: 16,
     borderWidth: 1,
-    borderColor: Colors.border,
-    justifyContent: "space-between",
-    minHeight: 140,
-  },
-  actionCardPrimary: {
-    backgroundColor: Colors.surface,
     borderColor: Colors.border,
   },
   actionPressed: {
     opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
-  actionIconPrimary: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: Colors.primary,
+  actionIconWhite: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 12,
   },
-  actionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: Colors.primary + "15",
+  actionIconGreen: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#00D084",
     justifyContent: "center",
     alignItems: "center",
-  },
-  actionContent: {
-    marginTop: 12,
-    gap: 4,
+    marginBottom: 12,
   },
   actionTitle: {
-    fontFamily: "Inter_600SemiBold",
     fontSize: 16,
-    color: Colors.text,
+    fontWeight: "500",
+    color: "#FFFFFF",
   },
   actionSub: {
-    fontFamily: "Inter_400Regular",
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: "#A1A1AA",
+    marginTop: 4,
   },
   commissionBadge: {
     alignSelf: "flex-start",
-    marginTop: 6,
+    marginTop: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.primary + "50",
-    backgroundColor: Colors.background,
+    backgroundColor: "rgba(0, 208, 132, 0.15)",
   },
   commissionBadgeText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 11,
-    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#00D084",
   },
-  actionTitleDark: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 16,
-    color: Colors.text,
-    marginTop: 12,
+  bannersSection: {
+    paddingHorizontal: 24,
+    gap: 16,
+  },
+  bannerCard: {
+    backgroundColor: "#18181B",
+    borderWidth: 1,
+    borderColor: "#27272A",
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  bannerThumbnail: {
+    width: "100%",
+    height: 160,
+  },
+  bannerContent: {
+    padding: 16,
+  },
+  bannerIcon: {
+    fontSize: 20,
+    marginBottom: 8,
+  },
+  bannerTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  bannerSubtitle: {
+    fontSize: 13,
+    color: "#A1A1AA",
+    marginTop: 4,
+  },
+  bannerCtaText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#00D084",
+    marginTop: 10,
   },
   profileNudge: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: Colors.surface,
-    borderRadius: 14,
+    borderRadius: 8,
     padding: 16,
     borderWidth: 1,
     borderColor: Colors.border,
-    marginTop: 20,
+    marginHorizontal: 24,
+    marginTop: 16,
   },
   profileNudgeContent: {
     flex: 1,
   },
   profileNudgeTitle: {
-    fontFamily: "Inter_600SemiBold",
     fontSize: 14,
-    color: Colors.text,
+    fontWeight: "600",
+    color: "#FFFFFF",
     marginBottom: 2,
   },
   profileNudgeDesc: {
-    fontFamily: "Inter_400Regular",
     fontSize: 12,
-    color: Colors.textMuted,
-  },
-  referralBonusCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.primary + "30",
-    marginTop: 20,
-    gap: 14,
-  },
-  referralBonusIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: Colors.primary + "15",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  referralBonusContent: {
-    flex: 1,
-  },
-  referralBonusTitle: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 14,
-    color: Colors.text,
-    marginBottom: 2,
-  },
-  referralBonusDesc: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 12,
-    color: Colors.primary,
-  },
-  bannersScroll: {
-    gap: 12,
-    paddingRight: 4,
-  },
-  bannerCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    width: 260,
-  },
-  bannerIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.primary + "15",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  bannerIcon: {
-    fontSize: 20,
-  },
-  bannerTitle: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
-    color: Colors.text,
-  },
-  bannerSubtitle: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginTop: 4,
-  },
-  bannerCtaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 10,
-  },
-  bannerCtaText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
-    color: Colors.primary,
+    color: "#71717A",
   },
 });

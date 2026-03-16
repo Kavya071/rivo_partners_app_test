@@ -6,6 +6,7 @@ import {
   Pressable,
   Platform,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
@@ -156,14 +157,17 @@ export default function LandingScreen() {
   const webBottomPad = Platform.OS === "web" ? 34 : 0;
 
   return (
-    <View
-      style={[
-        styles.container,
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.contentContainer,
         {
           paddingTop: insets.top + webTopPad + 20,
           paddingBottom: insets.bottom + webBottomPad + 20,
         },
       ]}
+      showsVerticalScrollIndicator={false}
+      bounces={false}
     >
       <Animated.View entering={FadeInUp.delay(100).duration(600)} style={styles.header}>
         <View style={styles.logoRow}>
@@ -282,7 +286,7 @@ export default function LandingScreen() {
         onClose={() => setShowPicker(false)}
         onSelect={handlePickerSelect}
       />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -290,6 +294,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  contentContainer: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     justifyContent: "space-between",
   },

@@ -11,7 +11,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as Font from "expo-font";
 import React, { useEffect, useState } from "react";
-import { Platform } from "react-native";
+import { Platform, useWindowDimensions, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -23,7 +23,22 @@ import { ConfigProvider } from "@/context/ConfigContext";
 
 SplashScreen.preventAutoHideAsync();
 
+const MAX_APP_WIDTH = 480;
 const queryClient = new QueryClient();
+
+function ResponsiveContainer({ children }: { children: React.ReactNode }) {
+  const { width } = useWindowDimensions();
+  if (Platform.OS !== "web" || width <= MAX_APP_WIDTH) {
+    return <>{children}</>;
+  }
+  return (
+    <View style={{ flex: 1, flexDirection: "row", justifyContent: "center", backgroundColor: "#000000" }}>
+      <View style={{ flex: 1, maxWidth: MAX_APP_WIDTH }}>
+        {children}
+      </View>
+    </View>
+  );
+}
 
 function RootLayoutNav() {
   return (
@@ -95,7 +110,9 @@ export default function RootLayout() {
               <GestureHandlerRootView style={{ flex: 1 }}>
                 <KeyboardProvider>
                   <StatusBar style="light" />
-                  <RootLayoutNav />
+                  <ResponsiveContainer>
+                    <RootLayoutNav />
+                  </ResponsiveContainer>
                 </KeyboardProvider>
               </GestureHandlerRootView>
             </ConfigProvider>
