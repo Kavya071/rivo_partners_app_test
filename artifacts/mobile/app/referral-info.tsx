@@ -9,7 +9,7 @@ import {
   Share,
 } from "react-native";
 import { router } from "expo-router";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useQuery } from "@tanstack/react-query";
@@ -26,7 +26,6 @@ function ordinal(n: number): string {
 
 export default function ReferralInfoScreen() {
   const insets = useSafeAreaInsets();
-  const webTopPad = Platform.OS === "web" ? 67 : 0;
   const config = useConfig();
 
   const { data: agent } = useQuery({
@@ -46,23 +45,16 @@ export default function ReferralInfoScreen() {
     try {
       await Share.share({ message: msg });
     } catch {
-      // cancelled
     }
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top + webTopPad },
-      ]}
-    >
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Feather name="arrow-left" size={24} color={Colors.text} />
+          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
         </Pressable>
-        <Text style={styles.headerTitle}>Referral Program</Text>
-        <View style={{ width: 44 }} />
+        <Text style={styles.headerTitle}>How Referrals Work</Text>
       </View>
 
       <ScrollView
@@ -70,39 +62,62 @@ export default function ReferralInfoScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.duration(500)}>
-          <Text style={styles.title}>How the referral{"\n"}program works</Text>
+          <Text style={styles.title}>
+            {"Grow your network,\nmultiply your earnings."}
+          </Text>
           <Text style={styles.subtitle}>
-            Earn bonuses when agents you refer close their deals.
+            Our referral program is designed to reward you for bringing
+            high-quality agents into the Rivo ecosystem.
           </Text>
 
-          <View style={styles.stepsContainer}>
-            <View style={styles.stepCard}>
-              <View style={[styles.stepIcon, { backgroundColor: Colors.primary + "15" }]}>
-                <Ionicons name="share-outline" size={24} color={Colors.primary} />
+          <View style={styles.cardsContainer}>
+            <View style={styles.card}>
+              <View
+                style={[
+                  styles.iconCircle,
+                  { backgroundColor: "rgba(0,208,132,0.1)" },
+                ]}
+              >
+                <Ionicons name="people" size={24} color={Colors.primary} />
               </View>
-              <Text style={styles.stepTitle}>1. Share Your Link</Text>
-              <Text style={styles.stepDesc}>
-                Send your unique referral link to real estate agents in your network. They can sign up using your code.
+              <Text style={styles.cardTitle}>1. Invite Agents</Text>
+              <Text style={styles.cardDesc}>
+                Share your unique referral link with other real estate agents.
+                When they sign up using your link, they are automatically tagged
+                to your network.
               </Text>
             </View>
 
-            <View style={styles.stepCard}>
-              <View style={[styles.stepIcon, { backgroundColor: "#3b82f615" }]}>
-                <Feather name="briefcase" size={24} color="#3b82f6" />
+            <View style={styles.card}>
+              <View
+                style={[
+                  styles.iconCircle,
+                  { backgroundColor: "rgba(59,130,246,0.1)" },
+                ]}
+              >
+                <Ionicons name="briefcase" size={24} color="#3b82f6" />
               </View>
-              <Text style={styles.stepTitle}>2. They Close Deals</Text>
-              <Text style={styles.stepDesc}>
-                Once your referred agents start submitting mortgage leads, our team processes them. You can track their progress in your Network tab.
+              <Text style={styles.cardTitle}>2. They Close Deals</Text>
+              <Text style={styles.cardDesc}>
+                Once your referred agents start submitting mortgage leads, our
+                team processes them. You can track their progress in your Network
+                tab.
               </Text>
             </View>
 
-            <View style={styles.stepCard}>
-              <View style={[styles.stepIcon, { backgroundColor: "#a855f715" }]}>
+            <View style={styles.card}>
+              <View
+                style={[
+                  styles.iconCircle,
+                  { backgroundColor: "rgba(168,85,247,0.1)" },
+                ]}
+              >
                 <Ionicons name="flash" size={24} color="#a855f7" />
               </View>
-              <Text style={styles.stepTitle}>3. Earn Bonuses</Text>
-              <Text style={styles.stepDesc}>
-                You earn a bonus for each of the first {amounts.length} successful disbursals from every agent you refer.
+              <Text style={styles.cardTitle}>3. Earn Bonuses</Text>
+              <Text style={styles.cardDesc}>
+                You earn a bonus for each of the first {amounts.length}{" "}
+                successful disbursals from every agent you refer.
               </Text>
 
               <View style={styles.bonusTable}>
@@ -131,7 +146,10 @@ export default function ReferralInfoScreen() {
       <View
         style={[
           styles.bottomBar,
-          { paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 16) },
+          {
+            paddingBottom:
+              insets.bottom + (Platform.OS === "web" ? 34 : 16),
+          },
         ]}
       >
         <Pressable
@@ -141,7 +159,7 @@ export default function ReferralInfoScreen() {
             pressed && styles.btnPressed,
           ]}
         >
-          <Ionicons name="share-outline" size={20} color="#fff" />
+          <Ionicons name="share-social" size={20} color="#000000" />
           <Text style={styles.referBtnText}>Refer now</Text>
         </Pressable>
       </View>
@@ -152,83 +170,83 @@ export default function ReferralInfoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: "#000000",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
+    paddingTop: 12,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: "#27272A",
+    backgroundColor: "#000000",
+    gap: 16,
   },
   backBtn: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#18181B",
     justifyContent: "center",
     alignItems: "center",
   },
   headerTitle: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 17,
-    color: Colors.text,
+    fontSize: 20,
+    fontWeight: "500",
+    color: "#FFFFFF",
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 28,
+    padding: 24,
     paddingBottom: 120,
   },
   title: {
-    fontFamily: "Inter_700Bold",
     fontSize: 30,
-    color: Colors.text,
-    lineHeight: 38,
-    marginBottom: 12,
+    fontWeight: "500",
+    color: "#FFFFFF",
+    marginBottom: 16,
   },
   subtitle: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 16,
-    color: Colors.textSecondary,
-    lineHeight: 24,
+    fontSize: 18,
+    color: "#A1A1AA",
+    lineHeight: 28,
     marginBottom: 32,
   },
-  stepsContainer: {
-    gap: 16,
+  cardsContainer: {
+    gap: 32,
   },
-  stepCard: {
-    backgroundColor: Colors.surface,
+  card: {
+    backgroundColor: "rgba(24,24,27,0.5)",
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 16,
-    padding: 20,
+    borderColor: "#27272A",
+    borderRadius: 12,
+    padding: 24,
   },
-  stepIcon: {
+  iconCircle: {
     width: 48,
     height: 48,
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 14,
+    marginBottom: 16,
   },
-  stepTitle: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 18,
-    color: Colors.text,
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: "500",
+    color: "#FFFFFF",
     marginBottom: 8,
   },
-  stepDesc: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 14,
-    color: Colors.textSecondary,
-    lineHeight: 22,
+  cardDesc: {
+    fontSize: 16,
+    color: "#A1A1AA",
+    lineHeight: 26,
   },
   bonusTable: {
     marginTop: 16,
-    backgroundColor: Colors.background,
-    borderRadius: 12,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "#27272A",
     padding: 16,
     gap: 12,
   },
@@ -238,58 +256,57 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   bonusRowLabel: {
-    fontFamily: "Inter_400Regular",
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: "#A1A1AA",
   },
   bonusRowValue: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 14,
-    color: Colors.text,
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#FFFFFF",
   },
   bonusTotalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 12,
-    marginTop: 4,
+    paddingTop: 8,
+    marginTop: 8,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: "#27272A",
   },
   bonusTotalLabel: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
-    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#00D084",
   },
   bonusTotalValue: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 14,
-    color: Colors.primary,
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#00D084",
   },
   bottomBar: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    backgroundColor: Colors.background,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    backgroundColor: "#000000",
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: "#27272A",
   },
   referBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
     height: 56,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
+    gap: 8,
   },
   referBtnText: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 17,
-    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#000000",
   },
   btnPressed: {
     opacity: 0.85,

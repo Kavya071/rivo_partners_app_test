@@ -163,6 +163,14 @@ export default function NetworkScreen() {
           </Text>
           <Feather name="chevron-right" size={16} color={Colors.primary} />
         </Pressable>
+
+        <Pressable
+          onPress={() => router.push("/terms")}
+          style={styles.knowMoreRow}
+        >
+          <Text style={styles.knowMoreText}>Read full T&Cs</Text>
+          <Ionicons name="chevron-forward" size={16} color={Colors.primary} />
+        </Pressable>
       </View>
 
       <View style={styles.howItWorks}>

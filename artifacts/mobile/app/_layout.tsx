@@ -68,6 +68,18 @@ function RootLayoutNav() {
         name="referral-info"
         options={{ presentation: "card" }}
       />
+      <Stack.Screen
+        name="terms"
+        options={{ presentation: "card" }}
+      />
+      <Stack.Screen
+        name="privacy"
+        options={{ presentation: "card" }}
+      />
+      <Stack.Screen
+        name="bonus-terms"
+        options={{ presentation: "card" }}
+      />
     </Stack>
   );
 }

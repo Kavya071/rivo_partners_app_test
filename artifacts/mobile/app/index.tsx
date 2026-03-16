@@ -231,24 +231,34 @@ export default function LandingScreen() {
       </Animated.View>
 
       <View style={styles.bottomSection}>
-        <Pressable
-          onPress={() => setTermsAccepted(!termsAccepted)}
-          style={styles.termsRow}
-        >
-          <View
-            style={[
-              styles.checkbox,
-              termsAccepted && styles.checkboxChecked,
-            ]}
+        <View style={styles.termsRow}>
+          <Pressable
+            onPress={() => setTermsAccepted(!termsAccepted)}
+            style={styles.checkboxHit}
           >
-            {termsAccepted && (
-              <Feather name="check" size={14} color="#fff" />
-            )}
-          </View>
+            <View
+              style={[
+                styles.checkbox,
+                termsAccepted && styles.checkboxChecked,
+              ]}
+            >
+              {termsAccepted && (
+                <Feather name="check" size={14} color="#fff" />
+              )}
+            </View>
+          </Pressable>
           <Text style={styles.termsText}>
-            I agree to the Terms & Conditions
+            <Text onPress={() => setTermsAccepted(!termsAccepted)}>
+              I agree to the{" "}
+            </Text>
+            <Text
+              style={styles.termsLink}
+              onPress={() => router.push("/terms")}
+            >
+              Terms & Conditions
+            </Text>
           </Text>
-        </Pressable>
+        </View>
 
         <Pressable
           onPress={() => handleGetStarted(false)}
@@ -447,6 +457,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
+  checkboxHit: {
+    padding: 4,
+  },
   checkbox: {
     width: 22,
     height: 22,
@@ -464,6 +477,10 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 14,
     color: Colors.textSecondary,
+  },
+  termsLink: {
+    color: Colors.primary,
+    textDecorationLine: "underline",
   },
   ctaButton: {
     backgroundColor: Colors.primary,
