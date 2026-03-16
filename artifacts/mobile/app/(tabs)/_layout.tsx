@@ -1,14 +1,20 @@
 import { BlurView } from "expo-blur";
-import { Tabs } from "expo-router";
+import { Tabs, Redirect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 
 import Colors from "@/constants/colors";
+import { useAuth } from "@/context/AuthContext";
 
 export default function TabLayout() {
+  const { isAuthenticated, isLoading } = useAuth();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+
+  if (!isLoading && !isAuthenticated) {
+    return <Redirect href="/" />;
+  }
 
   return (
     <Tabs
