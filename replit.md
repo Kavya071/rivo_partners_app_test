@@ -2,7 +2,7 @@
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+pnpm workspace monorepo using TypeScript. Contains a mobile app (Rivo Partners) and a shared backend API server.
 
 ## Stack
 
@@ -10,6 +10,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
+- **Mobile**: Expo React Native (Expo Router, file-based routing)
 - **API framework**: Express 5
 - **Database**: PostgreSQL + Drizzle ORM
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
@@ -21,27 +22,63 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 ```text
 artifacts-monorepo/
 ├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
+│   ├── api-server/         # Express API server (health check only; Rivo uses external API)
+│   └── mobile/             # Expo React Native app — Rivo Partners
+│       ├── app/            # Expo Router screens
+│       │   ├── _layout.tsx        # Root layout (providers, Stack navigator)
+│       │   ├── index.tsx          # Landing screen (auth entry)
+│       │   ├── whatsapp-listening.tsx  # WhatsApp OTP polling screen
+│       │   ├── submit-lead.tsx    # Lead submission form
+│       │   ├── referral-success.tsx  # Success animation screen
+│       │   └── (tabs)/           # Bottom tab navigator
+│       │       ├── _layout.tsx    # Tab bar config
+│       │       ├── index.tsx      # Home tab (earnings dashboard)
+│       │       ├── clients.tsx    # Clients tab (search + list)
+│       │       ├── network.tsx    # Network tab (referral code)
+│       │       └── profile.tsx    # Profile tab (edit + sign out)
+│       ├── context/        # AuthContext (AsyncStorage token management)
+│       ├── lib/            # API client (fetch wrapper with Bearer token)
+│       └── constants/      # Colors (dark theme), API config, country codes
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
 │   ├── api-zod/            # Generated Zod schemas from OpenAPI
 │   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+├── scripts/                # Utility scripts
+├── pnpm-workspace.yaml
+├── tsconfig.base.json
+├── tsconfig.json
+└── package.json
 ```
+
+## Rivo Partners Mobile App
+
+Mortgage referral platform for Dubai real estate agents. Frontend-only Expo app calling external backend API.
+
+### External API
+- Base URL: `https://rivo-partners-backend-331738587654.asia-southeast1.run.app/api/v1`
+- Auth: WhatsApp OTP flow → Bearer token stored in AsyncStorage
+- Endpoints: `/agents/init-whatsapp/`, `/agents/check-verification/{code}/`, `/agents/me/`, `/agents/network/`, `/agents/profile/`, `/agents/logout/`, `/agents/delete/`, `/clients/`, `/clients/ingest/`
+
+### Design System
+- Background: #000000 (pure black)
+- Cards/surfaces: #18181b (zinc-900)
+- Borders: #27272a (zinc-800)
+- Primary accent: #00D084 (green)
+- Text: white (#FFFFFF) primary, #a1a1aa secondary
+- Font: Inter (400, 500, 600, 700)
+
+### Navigation
+- Root: Stack navigator (Landing → WhatsApp Listening → Tabs, Submit Lead, Referral Success)
+- Tabs: Home, Clients, Network, Profile
 
 ## TypeScript & Composite Projects
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references.
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+- **Always typecheck from the root** — run `pnpm run typecheck`
+- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck
+- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array
 
 ## Root Scripts
 
@@ -52,45 +89,24 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 
 ### `artifacts/api-server` (`@workspace/api-server`)
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+Express 5 API server. Health check endpoint only for this project.
 
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+### `artifacts/mobile` (`@workspace/mobile`)
+
+Expo React Native mobile app — Rivo Partners. Uses Expo Router for file-based routing with bottom tabs. Calls external backend API directly (no local backend needed for app functionality).
 
 ### `lib/db` (`@workspace/db`)
 
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
-
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
-
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
+Database layer using Drizzle ORM with PostgreSQL.
 
 ### `lib/api-spec` (`@workspace/api-spec`)
 
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
+OpenAPI spec and Orval codegen config.
 
 ### `lib/api-zod` (`@workspace/api-zod`)
 
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
+Generated Zod schemas from the OpenAPI spec.
 
 ### `lib/api-client-react` (`@workspace/api-client-react`)
 
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+Generated React Query hooks and fetch client from the OpenAPI spec.
