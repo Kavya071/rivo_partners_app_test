@@ -120,7 +120,7 @@ export async function ingestClient(data: {
 }): Promise<{ id: number }> {
   const res = await apiFetch("/clients/ingest/", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...data, consent: true }),
   });
   if (!res.ok) throw new Error("Failed to submit client");
   return res.json();
