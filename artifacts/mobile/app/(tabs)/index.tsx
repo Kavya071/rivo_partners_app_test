@@ -140,7 +140,7 @@ export default function HomeScreen() {
               </Text>
               <View style={styles.commissionBadge}>
                 <Text style={styles.commissionBadgeText}>
-                  {config.COMMISSION.MIN_PERCENT}%–{config.COMMISSION.MAX_PERCENT}%
+                  Earn {config.COMMISSION.MIN_PERCENT}%–{config.COMMISSION.MAX_PERCENT}% commission
                 </Text>
               </View>
             </View>
@@ -166,7 +166,7 @@ export default function HomeScreen() {
         </View>
       </Animated.View>
 
-      {!agent?.is_profile_complete && (
+      {(!agent?.is_profile_complete || !agent?.name || !agent?.agent_type) && (
         <Animated.View entering={FadeInDown.delay(300).duration(500)}>
           <Pressable
             onPress={() => router.push("/(tabs)/profile")}
