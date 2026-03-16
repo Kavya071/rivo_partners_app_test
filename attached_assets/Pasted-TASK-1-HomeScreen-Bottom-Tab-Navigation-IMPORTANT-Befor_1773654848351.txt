@@ -1,0 +1,99 @@
+TASK 1: HomeScreen + Bottom Tab Navigation
+
+IMPORTANT: Before building anything, first READ the actual PWA source code from the cloned repo "Rivo partners GitHub repository". Read each file LINE BY LINE. The PWA is the source of truth — match it exactly. My descriptions below are a guide, but if there's any conflict between my description and the actual PWA code, the PWA code wins.
+READ THESE FILES FIRST:
+
+Rivo partners GitHub repository/frontend/src/screens/HomeScreen.tsx
+Rivo partners GitHub repository/frontend/src/config.ts
+Rivo partners GitHub repository/frontend/src/components/Layout.tsx
+Rivo partners GitHub repository/frontend/src/lib/api.ts
+
+DESIGN SYSTEM — apply to every element:
+
+Background: #000000 (pure black)
+Card/Surface: #18181B (zinc-900)
+Border: #27272A (zinc-800)
+Primary accent: #00D084 (green)
+Text primary: #FFFFFF
+Text secondary: #A1A1AA (gray-400)
+Text muted: #71717A (gray-500)
+Font: system-ui default
+API base: https://rivo-partners-backend-331738587654.asia-southeast1.run.app/api/v1
+Auth: Bearer token in Authorization header from AsyncStorage
+ALL icons must use @expo/vector-icons Ionicons — no web-only SVGs, no Lucide React
+
+Now fix the HomeScreen AND bottom tab navigation to match the PWA exactly.
+=== BOTTOM TAB BAR (affects all screens) ===
+The tab bar must have 4 tabs with VISIBLE ICONS using @expo/vector-icons Ionicons:
+
+Tab 1: Ionicons name="home-outline" (inactive) / "home" (active), label "Home"
+Tab 2: Ionicons name="briefcase-outline" (inactive) / "briefcase" (active), label "Clients"
+Tab 3: Ionicons name="people-outline" (inactive) / "people" (active), label "Network"
+Tab 4: Ionicons name="person-outline" (inactive) / "person" (active), label "Profile"
+
+Active tab: icon and label colored #00D084 (green)
+Inactive tab: icon and label colored #71717A (gray)
+Tab bar background: #000000 with top border #27272A
+Icon size: 24
+=== HOMESCREEN LAYOUT (top to bottom) ===
+SECTION 1 — HEADER (sticky top, bg #000000, border-bottom #27272A, paddingHorizontal 24, paddingTop 48, paddingBottom 24):
+Row 1: Left-aligned, horizontal layout:
+
+Avatar circle: width 48, height 48, backgroundColor #27272A, borderRadius 24 (full circle), centered text showing FIRST CHARACTER of user.name uppercased in white, fontSize 18, fontWeight 500. If no name, show first char of phone. If nothing, show "?"
+Right of avatar (marginLeft 16), vertical stack:
+
+Agent's FIRST NAME only (split name by space, take index 0). fontSize 20, fontWeight 500, color white. If no name, show full phone number.
+Below name (marginTop 4): Row with View (width 8, height 8, borderRadius 4, backgroundColor #00D084) + Text "Online" (fontSize 12, color #A1A1AA, fontWeight 500, marginLeft 8)
+
+
+
+Row 2 (marginTop 32):
+
+Text "Total Paid" — fontSize 14, color #A1A1AA, fontWeight 500
+Below (marginTop 4): Text "AED {total_earned}" — fontSize 48, fontWeight 500, color white, letterSpacing -1. Parse total_earned as float, format with toLocaleString
+
+Row 3 (marginTop 24, flexDirection row, gap 32):
+
+Item 1: Text "PENDING" (fontSize 12, color #71717A, textTransform uppercase, letterSpacing 1) then Text "AED {pending_amount}" (fontSize 18, fontWeight 500, color white)
+Item 2: Text "DISBURSALS" (same label style) then Text "{disbursed_count}" (fontSize 18, fontWeight 500, color white)
+
+SECTION 2 — ACTIONS (padding 24):
+Text "Actions" — fontSize 18, fontWeight 500, color white, marginBottom 16
+Two cards in a row (flexDirection row, gap 16):
+CARD 1 — "Submit Client" (flex 1, backgroundColor #18181B, borderRadius 8, padding 16):
+
+Icon circle: width 40, height 40, borderRadius 20, backgroundColor #FFFFFF (white), centered Ionicons name="arrow-forward" size={20} color="#000000" rotated -45 degrees (use transform rotate)
+Below icon (marginTop 12): Text "Submit Client" (fontSize 16, fontWeight 500, color white)
+Below (marginTop 4): Text "Earn ~AED 9,000" (fontSize 14, color #A1A1AA)
+Below (marginTop 8): Green badge View (borderWidth 1, borderColor rgba(0,208,132,0.5), backgroundColor #000000, borderRadius 999, paddingHorizontal 8, paddingVertical 2): Text "0.45% - 0.6%" (fontSize 10, fontWeight 700, color #00D084, letterSpacing 0.5)
+On press: navigate to LeadSubmissionScreen
+
+CARD 2 — "Invite Agent" (flex 1, same card style):
+
+Icon circle: width 40, height 40, borderRadius 20, backgroundColor #00D084 (green), centered Ionicons name="people" size={20} color="#000000"
+Text "Invite Agent" (same style)
+Text "Get AED 2,000 Bonus" (fontSize 14, color #A1A1AA)
+On press: navigate to NetworkScreen
+
+SECTION 3 — HOME BANNERS:
+Fetch from GET /config/ — response has home_banners array. For each banner with {id, title, subtitle, icon, thumbnail, cta_text, cta_link}:
+
+Card: backgroundColor #18181B, borderWidth 1, borderColor #27272A, borderRadius 8, overflow hidden
+If thumbnail: Image source={uri: thumbnail}, width 100%, height 160, resizeMode cover
+Padding 16: Row with icon emoji (if exists, fontSize 24) + vertical: title (fontSize 16, fontWeight 500, white), subtitle (fontSize 14, #A1A1AA), cta_text in green if exists
+
+SECTION 4 — COMPLETE PROFILE NUDGE (only if user.is_profile_complete === false):
+Card: backgroundColor rgba(24,24,27,0.5), borderWidth 1, borderColor #27272A, borderRadius 8, padding 16, flexDirection row, justifyContent space-between, alignItems center
+
+Left: "Complete your profile" (fontSize 14, fontWeight 500, white) + "Add your name, type, and email." (fontSize 12, #A1A1AA)
+Right: Ionicons name="chevron-forward" size={20} color="#52525B"
+On press: navigate to ProfileScreen
+
+=== API CALLS ===
+
+On mount: GET /agents/me/ — use response fields: name, phone, total_earned, pending_amount, disbursed_count, is_profile_complete
+On mount: GET /config/ — store: commission_min_percent (default 0.45), commission_max_percent (default 0.60), avg_payout (default 9000), referrer_bonuses (default [500,500,1000]), home_banners (default [])
+Computed: TOTAL_POTENTIAL = sum of referrer_bonuses array
+
+=== CRITICAL ===
+Every icon MUST be visible using @expo/vector-icons Ionicons. If ANY icon renders as blank, dark square, or invisible, the task is NOT complete. Test in Expo Go, not just web preview.

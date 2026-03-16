@@ -1,0 +1,104 @@
+TASK 3: NetworkScreen
+
+IMPORTANT: Before building anything, first READ the actual PWA source code from the cloned repo "Rivo partners GitHub repository". Read each file LINE BY LINE. The PWA is the source of truth — match it exactly.
+READ THESE FILES FIRST:
+
+Rivo partners GitHub repository/frontend/src/screens/NetworkScreen.tsx
+Rivo partners GitHub repository/frontend/src/config.ts
+Rivo partners GitHub repository/frontend/src/lib/api.ts
+Rivo partners GitHub repository/frontend/src/lib/whatsapp.ts
+
+DESIGN SYSTEM:
+
+Background: #000000, Card: #18181B, Border: #27272A, Accent: #00D084
+Text primary: #FFFFFF, Text secondary: #A1A1AA, Text muted: #71717A
+ALL icons: @expo/vector-icons Ionicons
+API base: https://rivo-partners-backend-331738587654.asia-southeast1.run.app/api/v1
+
+Fix the NetworkScreen to match the PWA exactly.
+=== API CALLS ===
+
+GET /agents/network/ → {agent_code: "RIVO-WVSJ", referred_agents: [{id, name, agent_code, created_at, deals_count, bonus_earned}], bonus_summary: {total_earned, bonuses_count, max_bonuses, completed}}
+GET /config/ → {referrer_bonuses: [500,500,1000], referral_share_msg: "Hey, I'm using Rivo to earn mortgage commissions. Join here: "}
+
+=== LAYOUT ===
+HEADER (bg #000000, paddingTop 48, paddingBottom 32, paddingHorizontal 24, borderBottom #27272A, alignItems center):
+
+Text "My network" — fontSize 30, fontWeight 500, white, textAlign center, marginBottom 24
+Text "Your Referral Code" — fontSize 14, color #A1A1AA, textAlign center, marginBottom 16
+Code box (backgroundColor #18181B, borderWidth 1, borderColor #27272A, borderRadius 8, padding 16, alignItems center):
+
+Text "{agent_code}" — fontSize 36, fontWeight 500, white, letterSpacing 4, textAlign center. MUST show REAL code from API (e.g. "RIVO-WVSJ"), NOT placeholder "RIVO-XXXX"
+
+
+"Invite your network" button (marginTop 24, width 100%, height 56, backgroundColor white, borderRadius 8, flexDirection row, justifyContent center, alignItems center):
+
+Ionicons name="share-social-outline" size={20} color="black" (marginRight 8)
+Text "Invite your network" (fontSize 18, fontWeight 500, color black)
+On press: open native share (import {Share} from 'react-native') with message: "{share_msg}https://partners.rivo.ae?ref={agent_code}"
+
+
+Copy link row (marginTop 16, flexDirection row, justifyContent center, alignItems center):
+
+Ionicons name="copy-outline" size={16} color="#A1A1AA" (marginRight 8)
+Text "Tap to copy link" (fontSize 14, color #A1A1AA)
+On press: Clipboard.setStringAsync("https://partners.rivo.ae?ref={agent_code}"), show brief feedback
+
+
+Divider (marginTop 24, borderTopWidth 1, borderTopColor rgba(39,39,42,0.5), paddingTop 16)
+Link: "Know more about the referral program >" (fontSize 14, fontWeight 500, color #00D084, textAlign center, flexDirection row, alignItems center)
+
+Ionicons name="chevron-forward" size={16} color="#00D084"
+On press: navigate to ReferralInfoScreen
+
+
+
+=== HOW IT WORKS (padding 24) ===
+Text "How it works" — fontSize 18, fontWeight 500, white, marginBottom 24
+3 steps with connecting vertical line (View position absolute, left 15, top 16, bottom 16, width 2, backgroundColor #27272A):
+Step 1: flexDirection row, gap 20, marginBottom 32
+
+Circle: width 32, height 32, borderRadius 16, backgroundColor #18181B, borderWidth 1, borderColor #27272A, centered text "1" (fontSize 14, fontWeight 500, white)
+Right: "Ask Agents to join Rivo" (fontSize 16, fontWeight 500, white) + "Share your link with agents in your network." (fontSize 14, color #A1A1AA, marginTop 4)
+
+Step 2: same style with "2"
+
+"They refer mortgages to Rivo" + "Bonuses unlock on their first {referrer_bonuses.length} disbursals."
+
+Step 3: circle backgroundColor #00D084, text "3" color black
+
+"You both get paid" + "AED 500, AED 500, AED 1,000 respectively." (formatted from referrer_bonuses array, each with toLocaleString)
+
+Terms note (marginTop 32, borderTopWidth 1, borderTopColor #18181B, paddingTop 24):
+
+Text "*Terms and conditions apply. Bonuses are subject to successful loan disbursal and verification." (fontSize 12, color #71717A)
+"Read full T&Cs" (color #A1A1AA, textDecorationLine underline). On press: navigate to TermsScreen
+
+=== YOUR NETWORK SECTION ===
+Row: Ionicons name="people" size={20} color="white" (marginRight 8) + Text "Your Network" (fontSize 18, fontWeight 500, white)
+
+If bonus_summary.completed: View (marginLeft 8, backgroundColor rgba(0,208,132,0.1), paddingHorizontal 8, paddingVertical 2, borderRadius 999): Text "Completed" (fontSize 12, fontWeight 500, color #00D084)
+
+If loading: 2 skeleton placeholder rows (height 20, backgroundColor #27272A, borderRadius 4, animated pulse)
+If referred_agents empty: Text "No agents in your network yet. Share your link to start earning bonuses." (fontSize 14, color #71717A, marginTop 16)
+For each referred agent (borderBottomWidth 1, borderBottomColor #18181B, paddingVertical 8):
+
+If deals_count === 0: opacity 0.5
+Row justifyContent space-between:
+
+Left:
+
+name (fontSize 16, fontWeight 500, white) — or "Agent" if no name
+"Joined {date} • {deals_count}/{max_bonuses} Deals" (fontSize 12, color #71717A). Format date as "7 Mar" style.
+
+
+Right (alignItems flex-end):
+
+"+AED {bonus_earned}" (fontSize 14, fontWeight 500, color: bonus_earned > 0 ? #00D084 : #71717A)
+"Bonus" (fontSize 10, color #71717A, textTransform uppercase)
+
+
+
+
+
+Bottom padding: 96

@@ -24,3 +24,14 @@ expertMode = true
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 20000
+
+[userenv]
+
+[userenv.shared]
+GOOGLE_API_KEY_1 = "AIzaSyBABDrTTQFXu00e2unAmPcJ7mi57uuyyvs"
+
+[userenv.development]
+GOOGLE_API_KEY = "AIzaSyBdo73WHu9Abq6peqMYMQoKdN4sIAb6Cjw"
+
+[userenv.production]
+GOOGLE_API_KEY = "AIzaSyBdo73WHu9Abq6peqMYMQoKdN4sIAb6Cjw"

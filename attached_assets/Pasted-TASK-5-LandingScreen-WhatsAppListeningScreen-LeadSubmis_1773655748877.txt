@@ -1,0 +1,234 @@
+TASK 5: LandingScreen + WhatsAppListeningScreen + LeadSubmissionScreen + ReferralSuccessScreen + ReferralBonusScreen
+
+IMPORTANT: Before building anything, first READ the actual PWA source code from the cloned repo "Rivo partners GitHub repository". Read each file LINE BY LINE. The PWA is the source of truth — match it exactly.
+READ THESE FILES FIRST:
+
+Rivo partners GitHub repository/frontend/src/screens/LandingScreen.tsx
+Rivo partners GitHub repository/frontend/src/screens/WhatsAppListeningScreen.tsx
+Rivo partners GitHub repository/frontend/src/screens/LeadSubmissionScreen.tsx
+Rivo partners GitHub repository/frontend/src/screens/ReferralSuccessScreen.tsx
+Rivo partners GitHub repository/frontend/src/screens/ReferralBonusScreen.tsx
+Rivo partners GitHub repository/frontend/src/components/ui/WhatsAppShareSheet.tsx
+Rivo partners GitHub repository/frontend/src/components/ui/Button.tsx
+Rivo partners GitHub repository/frontend/src/lib/whatsapp.ts
+Rivo partners GitHub repository/frontend/src/lib/api.ts
+Rivo partners GitHub repository/frontend/src/config.ts
+
+DESIGN SYSTEM:
+
+Background: #000000, Card: #18181B, Border: #27272A, Accent: #00D084
+Text primary: #FFFFFF, Text secondary: #A1A1AA, Text muted: #71717A
+ALL icons: @expo/vector-icons Ionicons — NO Lucide React, NO web SVGs
+API base: https://rivo-partners-backend-331738587654.asia-southeast1.run.app/api/v1
+
+Fix all 5 screens to match the PWA exactly.
+=== LANDING SCREEN ===
+Full screen, bg #000000, padding 24.
+TOP (marginTop 32, marginBottom 48, flexDirection row, justifyContent space-between):
+
+Left row: Green square (width 32, height 32, backgroundColor #00D084, borderRadius 8, centered text "R" fontSize 18 fontWeight 500 color black) + Text "Rivo Partners" (marginLeft 12, fontSize 20, fontWeight 500, white)
+Right (only if referral code exists in deep link params): referral badge View (backgroundColor #18181B, borderWidth 1, borderColor #27272A, borderRadius 8, paddingHorizontal 16, paddingVertical 8, flexDirection row, alignItems center):
+
+Pulsing green dot (width 8, height 8, borderRadius 4, backgroundColor #00D084, animated opacity pulse)
+Right vertical (marginLeft 12): "REFERRED BY" (fontSize 10, color #A1A1AA, textTransform uppercase, letterSpacing 1) + referrer name (fontSize 14, fontWeight 500, white)
+
+
+
+REFERRAL RESOLUTION: Check deep link for ?ref= param. If exists, store in AsyncStorage. Call GET /agents/referral/{code}/ → response.agent_name. Show in badge.
+CENTER (flex 1, justifyContent center):
+
+Heading: "Earn on every\nmortgage you refer." — but "mortgage you refer." in color #00D084. fontSize 48, fontWeight 500, letterSpacing -1, lineHeight 52
+Three value props (marginTop 48, gap 32):
+
+Row: Ionicons name="flash" size={24} color="#00D084" + vertical (marginLeft 20): "Fast Referrals" (fontSize 18, fontWeight 500, white) + "Submit a client in 60 seconds." (fontSize 16, color #A1A1AA)
+Row: Ionicons name="trending-up" size={24} color="#00D084" + "Real-Time Tracking" + "Live updates on every case."
+Row: Ionicons name="people" size={24} color="#00D084" + "Network Bonus" + "Earn by referring other agents."
+
+
+Payout section (marginTop 48, borderTopWidth 1, borderBottomWidth 1, borderColor #27272A, paddingVertical 24):
+
+Row: Text "AED " (fontSize 16, white) + Text "9,000" (fontSize 36, fontWeight 500, white) + superscript "^" (fontSize 18, white) + green badge (marginLeft 12, same style as HomeScreen: border green/50, bg black, text "0.45% - 0.60%" in 10px bold green)
+Text "Average payout per deal · on a AED 1.8M loan" (fontSize 14, color #71717A, fontWeight 500, marginTop 4)
+
+
+
+BOTTOM (marginTop auto, paddingTop 32):
+
+Terms checkbox row (flexDirection row, alignItems center, gap 12):
+
+Checkbox (use a Pressable with Ionicons "checkbox" when checked, "square-outline" when unchecked, color #00D084 when checked, #3F3F46 when unchecked, size 20)
+Text "I agree to the " (fontSize 14, color #A1A1AA) + "Terms & Conditions" (color #00D084, textDecorationLine underline). On press terms link: navigate to TermsScreen
+
+
+Get Started button (marginTop 16): width 100%, height 56, backgroundColor white, borderRadius 8, flexDirection row, justifyContent center, alignItems center
+
+WhatsApp icon: use Ionicons name="logo-whatsapp" size={28} color="#25D366" (marginRight 8)
+Text "Get Started" (fontSize 18, fontWeight 700, color black)
+DISABLED when terms not checked (opacity 0.5)
+On press flow:
+
+POST /agents/init-whatsapp/ with body {referral_code: storedRefCode || "", is_whatsapp_business: false, is_sign_in: false}
+Response: {code, whatsapp_url}
+Store code in AsyncStorage key "rivo_verify_code"
+Open WhatsApp: Linking.openURL(whatsapp_url)
+Navigate to WhatsAppListeningScreen
+
+
+
+
+Sign in link (marginTop 16, textAlign center): "Already have an account? " (fontSize 14, color #A1A1AA) + "Sign In" (textDecorationLine underline, color white)
+
+DISABLED when terms not checked
+On press: same flow as Get Started but with is_sign_in: true
+
+
+
+=== WHATSAPP LISTENING SCREEN ===
+Full screen, bg #000000, padding 24.
+Top: Pressable back button (Ionicons "arrow-back" size 24 color white, padding 8). On press: go back
+Center (flex 1, justifyContent center, alignItems center):
+
+WhatsApp circle: width 96, height 96, borderRadius 48, backgroundColor #25D366, justifyContent center, alignItems center
+
+Ionicons name="logo-whatsapp" size={48} color="white"
+
+
+Behind circle: animated pulse ring (same circle but opacity 0.2, scale animation pulsing outward)
+Text "Tap Send in WhatsApp" (fontSize 30, fontWeight 500, white, marginTop 32, textAlign center)
+Text "A message with your code is ready — just hit send." (fontSize 18, color #A1A1AA, marginTop 16, textAlign center, maxWidth 300)
+Listening pill (marginTop 32): View (backgroundColor rgba(24,24,27,0.5), paddingHorizontal 24, paddingVertical 12, borderRadius 999, borderWidth 1, borderColor #27272A, flexDirection row, alignItems center):
+
+Animated green dot (width 8, height 8, borderRadius 4, backgroundColor #00D084, animated opacity pulse)
+Text "Listening..." (marginLeft 12, fontSize 14, color #D4D4D8, fontWeight 500)
+
+
+After 6+ seconds of polling (track attempt count): Text "Taking longer than expected? Try opening WhatsApp again." (fontSize 14, color #71717A)
+
+Bottom: Text "Open WhatsApp again" (color #00D084, fontSize 14, fontWeight 500). On press: re-open WhatsApp with Linking.openURL
+POLLING:
+
+setInterval every 2000ms: GET /agents/check-verification/{code}/
+code from AsyncStorage key "rivo_verify_code"
+If response.verified === true:
+
+Clear interval
+Store response.token in AsyncStorage key "rivo_token"
+Store JSON.stringify(response.agent) in AsyncStorage key "rivo_user"
+Update auth context
+If response.agent.has_completed_first_action === false → navigate to ReferralBonusScreen
+Else → navigate to Home tab
+
+
+Clean up interval on unmount
+
+=== LEAD SUBMISSION SCREEN ===
+Full screen, bg #000000.
+HEADER (sticky, bg #000000, paddingHorizontal 24, paddingTop 24, paddingBottom 16, borderBottomWidth 1, borderBottomColor #27272A):
+
+Row: Pressable back (Ionicons "arrow-back" size 24 color white, padding 8, marginRight 16) + Text "New Client" (fontSize 20, fontWeight 500, white)
+Commission card (marginTop 16, backgroundColor #18181B, borderRadius 8, borderWidth 1, borderColor #27272A, padding 16, flexDirection row, justifyContent space-between):
+
+Left: "Estimated Commission" (fontSize 14, color #A1A1AA, fontWeight 500) + "AED {commission}" (fontSize 24, fontWeight 500, color #00D084, marginTop 4)
+Right: "0.45% of loan" (fontSize 12, color #71717A)
+Commission calc: parseFloat(amount) * 0.45 / 100 — update on every keystroke in amount field
+
+
+
+FORM (padding 24, gap 24):
+Text "Client Details" (fontSize 18, fontWeight 500, white, marginBottom 8)
+Field 1 — Full Name:
+- Label + TextInput (same style as ProfileScreen fields), placeholder "e.g. Ahmed Al-Mansoor"
+Field 2 — Expected Loan Amount (AED):
+- TextInput: keyboardType numeric, placeholder "e.g. 1500000"
+- On change: strip all non-digits, update state, recalculate commission
+Field 3 — Phone Number:
+- Label: "Phone Number"
+- Row: Country picker + phone input
+- Country picker (width ~100): height 56, backgroundColor #18181B, borderWidth 1, borderColor #27272A, borderRadius 8, paddingHorizontal 12, justifyContent center
+- Shows flag emoji + code (e.g. "🇦🇪 +971")
+- On press: open modal/picker with all 11 countries
+- Countries with EXACT digit counts:
+{code:"+971", flag:"🇦🇪", label:"UAE", digits:9}
+{code:"+91", flag:"🇮🇳", label:"IN", digits:10}
+{code:"+44", flag:"🇬🇧", label:"UK", digits:10}
+{code:"+1", flag:"🇺🇸", label:"US", digits:10}
+{code:"+966", flag:"🇸🇦", label:"SA", digits:9}
+{code:"+968", flag:"🇴🇲", label:"OM", digits:8}
+{code:"+974", flag:"🇶🇦", label:"QA", digits:8}
+{code:"+973", flag:"🇧🇭", label:"BH", digits:8}
+{code:"+965", flag:"🇰🇼", label:"KW", digits:8}
+{code:"+92", flag:"🇵🇰", label:"PK", digits:10}
+{code:"+63", flag:"🇵🇭", label:"PH", digits:10}
+- Phone TextInput (flex 1, marginLeft 8): keyboardType phone-pad, placeholder "50 123 4567", strip non-digits on change
+- Validation on blur: if digits.length !== expected digits for selected country → show error "Enter {digits} digits for {label}"
+- Default: +971 UAE
+Consent box (backgroundColor #18181B, borderRadius 8, borderWidth 1, borderColor #27272A, padding 16, flexDirection row):
+- Ionicons name="shield-checkmark" size={20} color="#A1A1AA" (marginRight 12, marginTop 2)
+- Text "We'll contact them within 30 minutes. By submitting, you confirm you have the client's consent to be contacted by Rivo." (fontSize 12, color #A1A1AA, flex 1)
+Error display (if error state): View backgroundColor rgba(239,68,68,0.1), borderWidth 1, borderColor rgba(239,68,68,0.2), borderRadius 8, padding 12
+- Text error message (fontSize 14, color #F87171)
+Submit button: width 100%, height 56, backgroundColor white, borderRadius 8. Text "Submit Client" fontSize 18, fontWeight 500, black.
+- DISABLED when: !name || !phone || !amount || phoneError exists (opacity 0.5)
+- Show ActivityIndicator when submitting
+- API: POST /clients/ingest/ body {client_name: name, client_phone: "{countryCode}{digits}", expected_mortgage_amount: parseFloat(amount), consent: true}
+- Error response with client_phone → show "This client has already been referred."
+- Success → navigate to ReferralSuccessScreen
+=== REFERRAL SUCCESS SCREEN ===
+Full screen, bg #000000, justifyContent center, alignItems center, padding 24.
+Center:
+
+Animated circle: width 96, height 96, borderRadius 48, backgroundColor #00D084
+
+Ionicons name="checkmark" size={40} color="black"
+Animate: scale 0.5→1, opacity 0→1 on mount (use Animated API or react-native-reanimated)
+
+
+Text "Client Submitted" (fontSize 30, fontWeight 500, white, marginTop 32)
+Text "We've received your client details." (fontSize 18, color #A1A1AA, marginTop 16)
+
+Two info cards (marginTop 48, gap 16, width 100%):
+Card 1 (backgroundColor #18181B, borderRadius 8, borderWidth 1, borderColor #27272A, padding 16, flexDirection row, alignItems center):
+- Circle: width 40, height 40, borderRadius 20, backgroundColor #27272A, centered Ionicons name="chatbubble" size={20} color="white"
+- Right (marginLeft 16): "Updates via WhatsApp" (fontSize 16, fontWeight 500, white) + "You'll receive status changes instantly." (fontSize 14, color #71717A)
+Card 2 (same style):
+  - Circle with Ionicons name="briefcase" size={20} color="#00D084"
+  - "Track in Clients" + "View progress in your dashboard."
+Bottom: Pressable width 100%, height 56, backgroundColor white, borderRadius 8. Text "Done" fontSize 18, fontWeight 500, black. On press: navigate to Home tab.
+=== REFERRAL BONUS SCREEN (shown after first login if has_completed_first_action is false) ===
+Full screen, bg #000000, padding 24.
+Top-right: X close button (position absolute, top 24, right 24, width 40, height 40, backgroundColor #18181B, borderRadius 20, centered Ionicons name="close" size={24} color="white"). On press: navigate to Home.
+Content (flex 1, paddingTop 48):
+
+Text "Refer Agents" (fontSize 40, fontWeight 500, white, marginBottom 24)
+Text "Your network can get you started with Rivo.\nThey close deals, you get paid." — first part fontSize 20, color #D4D4D8, second line (They close deals, you get paid.) color white. lineHeight 28.
+
+Timeline (marginTop 48, paddingLeft 16):
+- Vertical line: position absolute, left 23, top 16, bottom 16, width 2, backgroundColor #27272A
+For each bonus in referrer_bonuses [500, 500, 1000] (gap 48):
+  - Row: alignItems center
+  - Dot: width 16, height 16, borderRadius 8, borderWidth 2, borderColor #000000, zIndex 1, marginRight 24
+    - If LAST item: backgroundColor #00D084 + shadow green glow
+    - Else: backgroundColor #27272A
+  - Row flex 1 justifyContent space-between:
+    - ordinal(i+1) + " Deal" (fontSize 18, fontWeight 500, color: last ? white : #A1A1AA)
+    - "AED " + amount.toLocaleString() (fontSize 24, fontWeight 500, color: last ? #00D084 : white)
+  - ordinal function: 1→"1st", 2→"2nd", 3→"3rd"
+
+Total (marginTop 64, borderTopWidth 1, borderTopColor #18181B, paddingTop 32):
+  - Row justifyContent space-between:
+    - "TOTAL POTENTIAL" (fontSize 14, color #71717A, textTransform uppercase, letterSpacing 1, fontWeight 500)
+    - "AED 2,000" (fontSize 30, fontWeight 500, white) — sum of bonuses array
+Bottom:
+
+Share button: width 100%, height 56, backgroundColor white, borderRadius 8, flexDirection row, justifyContent center, alignItems center
+
+Ionicons name="share-social" size={20} color="black" marginRight 8
+Text "Share your link" fontSize 18, fontWeight 500, black
+On press: Share.share with referral message + URL
+
+
+"Skip for now" (marginTop 16, textAlign center, fontSize 14, color #71717A). On press: navigate to Home
+Divider + "Know more about the referral program >" (same green link style as NetworkScreen). On press: navigate to ReferralInfoScreen
+
+=== CRITICAL ===
+ALL icons MUST use @expo/vector-icons Ionicons and MUST be visible in Expo Go. Do NOT use Lucide React, web SVGs, or any web-only icon library. Test every icon renders on mobile.

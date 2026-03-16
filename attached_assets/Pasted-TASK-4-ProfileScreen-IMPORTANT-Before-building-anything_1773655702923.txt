@@ -1,0 +1,138 @@
+TASK 4: ProfileScreen
+
+IMPORTANT: Before building anything, first READ the actual PWA source code from the cloned repo "Rivo partners GitHub repository". Read each file LINE BY LINE. The PWA is the source of truth — match it exactly.
+READ THESE FILES FIRST:
+
+Rivo partners GitHub repository/frontend/src/screens/ProfileScreen.tsx
+Rivo partners GitHub repository/frontend/src/lib/api.ts
+Rivo partners GitHub repository/frontend/src/lib/notifications.ts
+
+DESIGN SYSTEM:
+
+Background: #000000, Card: #18181B, Border: #27272A, Accent: #00D084
+Text primary: #FFFFFF, Text secondary: #A1A1AA, Text muted: #71717A
+ALL icons: @expo/vector-icons Ionicons
+API base: https://rivo-partners-backend-331738587654.asia-southeast1.run.app/api/v1
+
+Fix the ProfileScreen to match the PWA exactly.
+=== STATE ===
+
+isEditing: starts true if is_profile_complete is false, else false
+name, email, agentType, agentTypeOther, reraNumber: loaded from GET /agents/me/
+saving: boolean
+showDeleteConfirm: boolean
+
+=== LAYOUT ===
+HEADER (bg #000000, paddingHorizontal 24, paddingTop 48, paddingBottom 24, borderBottomWidth 1, borderBottomColor #27272A, marginBottom 24):
+Row justifyContent space-between:
+
+Text "Profile" — fontSize 30, fontWeight 500, white
+If NOT editing: Pressable "Edit" text (fontSize 14, fontWeight 500, color #00D084). On press: setIsEditing(true)
+
+Below (flexDirection row, alignItems center, gap 16):
+
+Avatar: width 80, height 80, borderRadius 40, backgroundColor #18181B, justifyContent center, alignItems center
+
+Ionicons name="person-outline" size={40} color="#A1A1AA" — MUST be a visible icon, NOT a dark invisible circle
+
+
+Right vertical:
+
+name or "Set your name" (fontSize 20, fontWeight 500, white)
+phone (fontSize 16, color #A1A1AA)
+Badge (marginTop 8): View (paddingHorizontal 12, paddingVertical 4, backgroundColor rgba(0,208,132,0.1), borderRadius 999): Text "Verified Partner" (fontSize 12, fontWeight 500, color #00D084)
+
+
+
+=== PERSONAL DETAILS (paddingHorizontal 24) ===
+Text "Personal Details" — fontSize 18, fontWeight 500, white, marginBottom 24
+Field 1 — Full Name:
+
+Label: "Full Name" (fontSize 14, color #A1A1AA, marginBottom 8)
+TextInput: height 56, backgroundColor #18181B, borderWidth 1, borderColor #27272A, borderRadius 8, paddingHorizontal 16, color white, fontSize 16
+If NOT editing: opacity 0.7, editable false
+
+Field 2 — Agent Type (marginTop 16):
+
+Label: "Agent Type"
+Picker/dropdown: same input styling. Options: "" (placeholder "Select type"), "RE_BROKER" (display "Real Estate Broker"), "MORTGAGE_BROKER" (display "Mortgage Broker"), "OTHER" (display "Other")
+MUST show current value from API, NOT always "Select type"
+Show Ionicons name="chevron-down" size={20} on right side
+If NOT editing: disabled, opacity 0.7
+
+Field 3 — CONDITIONAL (only when agentType === "OTHER", marginTop 16):
+
+Label: "What do you do?"
+TextInput same style, value agentTypeOther
+
+Field 4 — CONDITIONAL (only when agentType === "RE_BROKER", marginTop 16):
+
+Label: "RERA Number"
+TextInput same style, placeholder "BRN-XXXXX", value reraNumber
+
+=== CONNECT ACCOUNTS (marginTop 32) ===
+Text "Connect Accounts" — fontSize 18, fontWeight 500, white, marginBottom 24
+If editing AND email is empty:
+
+Google button: width 100%, height 48, backgroundColor #18181B, borderWidth 1, borderColor #27272A, borderRadius 8, flexDirection row, justifyContent center, alignItems center, gap 12
+
+Google "G" colored logo (use Image or Text "G" with colors)
+Text "Continue with Google" (fontSize 14, fontWeight 500, white)
+
+
+Outlook button (marginTop 16): same style
+
+Microsoft logo
+Text "Continue with Outlook"
+
+
+Text "or" (textAlign center, color #71717A, marginVertical 16)
+
+Field 5 — Email:
+
+Label: "Email Address"
+TextInput: same style, placeholder "name@example.com", keyboardType email-address
+
+If editing:
+
+Save button (marginTop 24): width 100%, height 48, backgroundColor white, borderRadius 8. Text "Save Profile" (fontSize 16, fontWeight 500, color black)
+On press: PATCH /agents/profile/ with {name, email, agent_type: agentType, agent_type_other: agentTypeOther, rera_number: reraNumber}
+On success: refresh user data, setIsEditing(false), show success feedback
+Else:
+Edit button: width 100%, height 48, backgroundColor #000000, borderWidth 1, borderColor #3F3F46, borderRadius 8, flexDirection row, justifyContent center, alignItems center
+
+Ionicons name="pencil" size={16} color="white" + Text "Edit Profile" (marginLeft 8, fontSize 14, fontWeight 500, white)
+
+
+
+=== NOTIFICATIONS (marginTop 32) ===
+Text "Notifications" — fontSize 18, fontWeight 500, white, marginBottom 16
+Push toggle row: flexDirection row, justifyContent space-between, alignItems center, padding 16, backgroundColor #18181B, borderWidth 1, borderColor #27272A, borderRadius 12
+
+Left row: Ionicons name="notifications-outline" size={20} color="white" + Text "Push Notifications" (marginLeft 12, fontSize 14, fontWeight 500, white)
+Right: Switch component (trackColor: false=#3F3F46, true=#00D084, thumbColor white)
+
+=== SIGN OUT + DELETE (marginTop 32, paddingTop 24, borderTopWidth 1, borderTopColor #27272A) ===
+Sign Out button: width 100%, height 48, backgroundColor #18181B, borderWidth 1, borderColor #27272A, borderRadius 8, flexDirection row, justifyContent center, alignItems center
+
+Ionicons name="log-out-outline" size={20} color="#EF4444" (marginRight 8)
+Text "Sign Out" (fontSize 16, fontWeight 500, color #EF4444)
+On press: POST /agents/logout/ → clear all AsyncStorage → navigate to Landing
+
+Delete (marginTop 12): centered Pressable
+
+Ionicons name="trash-outline" size={16} color="#71717A" (marginRight 8)
+Text "Delete Account" (fontSize 14, color #71717A)
+On press: setShowDeleteConfirm(true)
+
+Confirmation (if showDeleteConfirm): View padding 16, backgroundColor rgba(239,68,68,0.1), borderWidth 1, borderColor rgba(239,68,68,0.2), borderRadius 8
+
+Text "Are you sure? This cannot be undone." (fontSize 14, color #F87171, textAlign center, marginBottom 12)
+Row gap 12:
+
+Cancel button (flex 1, height 40, borderWidth 1, borderColor #27272A, borderRadius 8): Text "Cancel" (color #A1A1AA). On press: setShowDeleteConfirm(false)
+Delete button (flex 1, height 40, borderWidth 1, borderColor rgba(239,68,68,0.3), backgroundColor rgba(239,68,68,0.1), borderRadius 8): Text "Delete" (color #EF4444). On press: DELETE /agents/delete/ → clear AsyncStorage → navigate to Landing
+
+
+
+Bottom padding: 96
