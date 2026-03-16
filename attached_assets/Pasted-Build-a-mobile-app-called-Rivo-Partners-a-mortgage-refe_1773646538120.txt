@@ -1,0 +1,51 @@
+Build a mobile app called "Rivo Partners" — a mortgage referral platform for real estate agents in Dubai.
+
+The backend API is ALREADY deployed and running at:
+https://rivo-partners-backend-331738587654.asia-southeast1.run.app/api/v1
+
+Do NOT build a backend. Just build the mobile frontend that calls this API.
+
+TECH STACK:
+- Expo React Native
+- React Navigation (bottom tabs + stack navigators)
+- AsyncStorage for auth token persistence
+- expo-linking for deep links
+- expo-sharing for native share sheet
+
+AUTH FLOW:
+1. User sees landing screen, taps "Get Started"
+2. App calls POST /agents/init-whatsapp/ with {referral_code:"", is_whatsapp_business:false, is_sign_in:false}
+3. Backend returns {code, whatsapp_url}
+4. App stores code locally, opens WhatsApp via Linking.openURL(whatsapp_url)
+5. App polls GET /agents/check-verification/{code}/ every 2 seconds
+6. When response has verified:true, store the token from response in AsyncStorage
+7. All subsequent API calls include header: Authorization: Bearer {token}
+
+SCREENS NEEDED:
+
+1. LandingScreen — "Earn on every mortgage you refer" heading, value props (Fast Referrals, Real-Time Tracking, Network Bonus), AED 9,000 avg payout display, terms checkbox, "Get Started" button triggering auth flow above
+
+2. WhatsAppListeningScreen — pulsing green WhatsApp icon, "Tap Send in WhatsApp" heading, "Listening..." indicator with polling, "Open WhatsApp again" link
+
+3. HomeScreen (Tab) — greeting with agent name, large "AED {total_earned}" display, pending amount + disbursals count, two action cards: "Submit Client" and "Invite Agent". API: GET /agents/me/
+
+4. LeadSubmissionScreen — back button, real-time commission calculator (amount × 0.45 / 100), form: Full Name, Loan Amount (AED numeric), Phone with country picker (UAE +971 9digits, India +91 10digits, UK +44 10digits, US +1 10digits, Saudi +966 9digits, Oman +968 8digits, Qatar +974 8digits, Bahrain +973 8digits, Kuwait +965 8digits, Pakistan +92 10digits, Philippines +63 10digits). Consent text. API: POST /clients/ingest/ with {client_name, client_phone, expected_mortgage_amount, consent:true}
+
+5. ReferralSuccessScreen — animated green checkmark, "Client Submitted", info about WhatsApp updates, "Done" button → Home
+
+6. ClientsScreen (Tab) — search bar with 300ms debounce, client cards showing name/date/status/amount/commission. 8 statuses: SUBMITTED, CONTACTED, QUALIFIED, SUBMITTED_TO_BANK, PREAPPROVED, FOL_RECEIVED, DISBURSED, DECLINED. Green text for DISBURSED. API: GET /clients/?search={query}
+
+7. NetworkScreen (Tab) — referral code display (e.g. RIVO-K9M2), "Invite your network" share button, "Copy link" button, how-it-works 3-step explainer, referred agents list with deal count + bonus. API: GET /agents/network/
+
+8. ProfileScreen (Tab) — avatar, name, phone, "Verified Partner" badge, editable fields (name, agent_type dropdown, email), save button (PATCH /agents/profile/), sign out (POST /agents/logout/ → clear AsyncStorage), delete account with confirmation (DELETE /agents/delete/)
+
+BOTTOM TABS: Home, Clients, Network, Profile
+
+DESIGN:
+- Dark theme throughout
+- Background: #000000 (pure black)
+- Cards/surfaces: #18181b (zinc-900)  
+- Borders: #27272a (zinc-800)
+- Primary accent: #00D084 (green)
+- Text: white for primary, #a1a1aa for secondary
+- Clean, minimal, premium feel like Wise or Revolut
