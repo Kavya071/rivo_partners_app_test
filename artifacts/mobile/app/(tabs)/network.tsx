@@ -13,13 +13,15 @@ import {
 } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
+import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
 
 import Colors from "@/constants/colors";
-import { getNetwork } from "@/lib/api";
+import { getNetwork, ReferredAgent } from "@/lib/api";
+
+const TAB_BAR_HEIGHT = 84;
 
 const HOW_IT_WORKS = [
   {
@@ -41,7 +43,6 @@ const HOW_IT_WORKS = [
 
 export default function NetworkScreen() {
   const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
   const webTopPad = Platform.OS === "web" ? 67 : 0;
 
   const {
@@ -55,7 +56,7 @@ export default function NetworkScreen() {
   });
 
   const referralCode = networkData?.referral_code ?? "RIVO-XXXX";
-  const referredAgents = networkData?.referred_agents ?? [];
+  const referredAgents: ReferredAgent[] = networkData?.referred_agents ?? [];
   const referralLink = `https://rivo.partners/join/${referralCode}`;
 
   const handleCopy = async () => {
@@ -67,12 +68,17 @@ export default function NetworkScreen() {
   };
 
   const handleShare = async () => {
+    const message = `Join Rivo Partners and earn on every mortgage referral! Use my code: ${referralCode}\n\n${referralLink}`;
     try {
-      await Share.share({
-        message: `Join Rivo Partners and earn on every mortgage referral! Use my code: ${referralCode}\n\n${referralLink}`,
-      });
-    } catch (e) {
-      console.error(e);
+      const canShare =
+        Platform.OS !== "web" && (await Sharing.isAvailableAsync());
+      if (canShare) {
+        await Share.share({ message, url: referralLink });
+      } else {
+        await Share.share({ message });
+      }
+    } catch (_e) {
+      // user cancelled share
     }
   };
 
@@ -89,7 +95,7 @@ export default function NetworkScreen() {
       style={styles.container}
       contentContainerStyle={{
         paddingTop: insets.top + webTopPad + 20,
-        paddingBottom: tabBarHeight + 20,
+        paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 20,
         paddingHorizontal: 20,
       }}
       showsVerticalScrollIndicator={false}
@@ -149,7 +155,7 @@ export default function NetworkScreen() {
       {referredAgents.length > 0 && (
         <View style={styles.referredSection}>
           <Text style={styles.sectionTitle}>Your Network</Text>
-          {referredAgents.map((agent: any, i: number) => (
+          {referredAgents.map((agent, i) => (
             <View key={i} style={styles.agentCard}>
               <View style={styles.agentAvatar}>
                 <Feather name="user" size={16} color={Colors.primary} />

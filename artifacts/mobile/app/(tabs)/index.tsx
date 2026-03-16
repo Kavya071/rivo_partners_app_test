@@ -13,11 +13,12 @@ import { router } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import Colors from "@/constants/colors";
 import { getMe } from "@/lib/api";
+
+const TAB_BAR_HEIGHT = 84;
 
 function formatCurrency(val: number): string {
   return val?.toLocaleString("en-AE") ?? "0";
@@ -25,7 +26,6 @@ function formatCurrency(val: number): string {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
   const webTopPad = Platform.OS === "web" ? 67 : 0;
 
   const {
@@ -56,7 +56,7 @@ export default function HomeScreen() {
       style={styles.container}
       contentContainerStyle={{
         paddingTop: insets.top + webTopPad + 20,
-        paddingBottom: tabBarHeight + 20,
+        paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 20,
         paddingHorizontal: 20,
       }}
       showsVerticalScrollIndicator={false}

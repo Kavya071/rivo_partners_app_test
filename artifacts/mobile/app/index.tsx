@@ -21,24 +21,27 @@ import Colors from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
 import { initWhatsApp } from "@/lib/api";
 
-const VALUE_PROPS = [
+interface ValueProp {
+  title: string;
+  desc: string;
+  renderIcon: () => React.ReactNode;
+}
+
+const VALUE_PROPS: ValueProp[] = [
   {
-    icon: "flash" as const,
-    iconLib: "ionicons" as const,
     title: "Fast Referrals",
     desc: "Submit clients in seconds",
+    renderIcon: () => <Ionicons name="flash" size={20} color={Colors.primary} />,
   },
   {
-    icon: "chart-timeline-variant" as const,
-    iconLib: "material-community" as const,
     title: "Real-Time Tracking",
     desc: "Monitor every deal stage",
+    renderIcon: () => <MaterialCommunityIcons name="chart-timeline-variant" size={20} color={Colors.primary} />,
   },
   {
-    icon: "people" as const,
-    iconLib: "ionicons" as const,
     title: "Network Bonus",
     desc: "Earn from your referrals",
+    renderIcon: () => <Ionicons name="people" size={20} color={Colors.primary} />,
   },
 ];
 
@@ -133,19 +136,7 @@ export default function LandingScreen() {
         {VALUE_PROPS.map((prop, i) => (
           <View key={i} style={styles.valuePropCard}>
             <View style={styles.valuePropIcon}>
-              {prop.iconLib === "ionicons" ? (
-                <Ionicons
-                  name={prop.icon as any}
-                  size={20}
-                  color={Colors.primary}
-                />
-              ) : (
-                <MaterialCommunityIcons
-                  name={prop.icon as any}
-                  size={20}
-                  color={Colors.primary}
-                />
-              )}
+              {prop.renderIcon()}
             </View>
             <View style={styles.valuePropText}>
               <Text style={styles.valuePropTitle}>{prop.title}</Text>

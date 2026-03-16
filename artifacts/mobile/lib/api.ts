@@ -30,10 +30,54 @@ async function apiFetch(
   return fetch(`${API_BASE_URL}${path}`, { ...options, headers });
 }
 
-export async function initWhatsApp(): Promise<{
+export interface InitWhatsAppResponse {
   code: string;
   whatsapp_url: string;
-}> {
+}
+
+export interface VerificationResponse {
+  verified: boolean;
+  token?: string;
+}
+
+export interface AgentProfile {
+  name: string;
+  phone: string;
+  email: string;
+  agent_type: string;
+  total_earned: number;
+  pending_amount: number;
+  disbursals_count: number;
+  referral_code: string;
+  agent_type_options?: string[];
+}
+
+export interface ClientRecord {
+  id: number;
+  client_name: string;
+  client_phone: string;
+  expected_mortgage_amount: number;
+  commission: number;
+  status: string;
+  created_at: string;
+}
+
+export interface ClientsResponse {
+  results?: ClientRecord[];
+}
+
+export interface ReferredAgent {
+  name: string;
+  deals_count: number;
+  bonus: number;
+}
+
+export interface NetworkResponse {
+  referral_code: string;
+  referred_agents: ReferredAgent[];
+}
+
+export async function initWhatsApp(): Promise<InitWhatsAppResponse> {
   const res = await apiFetch("/agents/init-whatsapp/", {
     method: "POST",
     body: JSON.stringify({
@@ -48,19 +92,21 @@ export async function initWhatsApp(): Promise<{
 
 export async function checkVerification(
   code: string,
-): Promise<{ verified: boolean; token?: string }> {
+): Promise<VerificationResponse> {
   const res = await apiFetch(`/agents/check-verification/${code}/`);
   if (!res.ok) throw new Error("Verification check failed");
   return res.json();
 }
 
-export async function getMe(): Promise<any> {
+export async function getMe(): Promise<AgentProfile> {
   const res = await apiFetch("/agents/me/");
   if (!res.ok) throw new Error("Failed to fetch profile");
   return res.json();
 }
 
-export async function getClients(search?: string): Promise<any> {
+export async function getClients(
+  search?: string,
+): Promise<ClientRecord[] | ClientsResponse> {
   const query = search ? `?search=${encodeURIComponent(search)}` : "";
   const res = await apiFetch(`/clients/${query}`);
   if (!res.ok) throw new Error("Failed to fetch clients");
@@ -71,7 +117,7 @@ export async function ingestClient(data: {
   client_name: string;
   client_phone: string;
   expected_mortgage_amount: number;
-}): Promise<any> {
+}): Promise<{ id: number }> {
   const res = await apiFetch("/clients/ingest/", {
     method: "POST",
     body: JSON.stringify(data),
@@ -80,7 +126,7 @@ export async function ingestClient(data: {
   return res.json();
 }
 
-export async function getNetwork(): Promise<any> {
+export async function getNetwork(): Promise<NetworkResponse> {
   const res = await apiFetch("/agents/network/");
   if (!res.ok) throw new Error("Failed to fetch network");
   return res.json();
@@ -90,7 +136,7 @@ export async function updateProfile(data: {
   name?: string;
   agent_type?: string;
   email?: string;
-}): Promise<any> {
+}): Promise<AgentProfile> {
   const res = await apiFetch("/agents/profile/", {
     method: "PATCH",
     body: JSON.stringify(data),

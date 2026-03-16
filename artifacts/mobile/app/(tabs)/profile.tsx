@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -12,8 +12,7 @@ import {
 } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 
@@ -21,7 +20,9 @@ import Colors from "@/constants/colors";
 import { getMe, updateProfile, logout, deleteAccount } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
-const AGENT_TYPES = [
+const TAB_BAR_HEIGHT = 84;
+
+const DEFAULT_AGENT_TYPES = [
   "Independent Agent",
   "Agency Agent",
   "Broker",
@@ -31,7 +32,6 @@ const AGENT_TYPES = [
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
   const webTopPad = Platform.OS === "web" ? 67 : 0;
   const { signOut } = useAuth();
   const queryClient = useQueryClient();
@@ -46,6 +46,13 @@ export default function ProfileScreen() {
   const [agentType, setAgentType] = useState("");
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const agentTypeOptions = useMemo(() => {
+    if (agent?.agent_type_options && Array.isArray(agent.agent_type_options) && agent.agent_type_options.length > 0) {
+      return agent.agent_type_options;
+    }
+    return DEFAULT_AGENT_TYPES;
+  }, [agent]);
 
   useEffect(() => {
     if (agent) {
@@ -64,7 +71,7 @@ export default function ProfileScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       Alert.alert("Saved", "Profile updated successfully");
-    } catch (e) {
+    } catch (_e) {
       Alert.alert("Error", "Failed to update profile");
     } finally {
       setSaving(false);
@@ -80,8 +87,8 @@ export default function ProfileScreen() {
         onPress: async () => {
           try {
             await logout();
-          } catch (e) {
-            console.error(e);
+          } catch (_e) {
+            // ignore
           }
           await signOut();
           router.replace("/");
@@ -102,8 +109,8 @@ export default function ProfileScreen() {
           onPress: async () => {
             try {
               await deleteAccount();
-            } catch (e) {
-              console.error(e);
+            } catch (_e) {
+              // ignore
             }
             await signOut();
             router.replace("/");
@@ -126,7 +133,7 @@ export default function ProfileScreen() {
       style={styles.container}
       contentContainerStyle={{
         paddingTop: insets.top + webTopPad + 20,
-        paddingBottom: tabBarHeight + 40,
+        paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 40,
         paddingHorizontal: 20,
       }}
       showsVerticalScrollIndicator={false}
@@ -179,7 +186,7 @@ export default function ProfileScreen() {
           </Pressable>
           {showTypePicker && (
             <View style={styles.pickerDropdown}>
-              {AGENT_TYPES.map((type) => (
+              {agentTypeOptions.map((type) => (
                 <Pressable
                   key={type}
                   onPress={() => {

@@ -11,12 +11,13 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
-import { getClients } from "@/lib/api";
+import { getClients, ClientRecord } from "@/lib/api";
 import { ClientStatus } from "@/constants/api";
+
+const TAB_BAR_HEIGHT = 84;
 
 function getStatusColor(status: ClientStatus): string {
   switch (status) {
@@ -46,7 +47,7 @@ function formatDate(dateStr: string): string {
   });
 }
 
-function ClientCard({ item }: { item: any }) {
+function ClientCard({ item }: { item: ClientRecord }) {
   const status = item.status as ClientStatus;
   return (
     <View style={styles.card}>
@@ -101,7 +102,6 @@ function ClientCard({ item }: { item: any }) {
 
 export default function ClientsScreen() {
   const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
   const webTopPad = Platform.OS === "web" ? 67 : 0;
 
   const [search, setSearch] = useState("");
@@ -126,7 +126,9 @@ export default function ClientsScreen() {
     queryFn: () => getClients(debouncedSearch || undefined),
   });
 
-  const clients = Array.isArray(data) ? data : data?.results ?? [];
+  const clients: ClientRecord[] = Array.isArray(data)
+    ? data
+    : (data as { results?: ClientRecord[] })?.results ?? [];
 
   return (
     <View style={styles.container}>
@@ -180,7 +182,7 @@ export default function ClientsScreen() {
           renderItem={({ item }) => <ClientCard item={item} />}
           contentContainerStyle={{
             paddingHorizontal: 20,
-            paddingBottom: tabBarHeight + 20,
+            paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 20,
             paddingTop: 8,
           }}
           showsVerticalScrollIndicator={false}
