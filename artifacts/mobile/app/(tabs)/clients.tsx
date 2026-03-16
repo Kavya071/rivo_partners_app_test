@@ -8,10 +8,13 @@ import {
   Platform,
   ActivityIndicator,
   RefreshControl,
+  Pressable,
+  TouchableOpacity,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
+import { router } from "expo-router";
 
 import Colors from "@/constants/colors";
 import { getClients, ClientRecord } from "@/lib/api";
@@ -19,79 +22,73 @@ import { ClientStatus } from "@/constants/api";
 
 const TAB_BAR_HEIGHT = 84;
 
-function getStatusColor(status: ClientStatus): string {
-  switch (status) {
-    case "DISBURSED":
-      return Colors.success;
-    case "DECLINED":
-      return Colors.danger;
-    default:
-      return Colors.textSecondary;
-  }
+const STATUS_LABELS: Record<string, string> = {
+  SUBMITTED: "Submitted",
+  CONTACTED: "Contacted",
+  QUALIFIED: "Qualified",
+  SUBMITTED_TO_BANK: "Submitted to Bank",
+  PREAPPROVED: "Preapproved",
+  FOL_RECEIVED: "FOL Received",
+  DISBURSED: "Disbursed",
+  DECLINED: "Declined",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  DISBURSED: "#00D084",
+  DECLINED: "#71717A",
+};
+
+const DEFAULT_STATUS_COLOR = "#A1A1AA";
+
+function getStatusColor(status: string): string {
+  return STATUS_COLORS[status] ?? DEFAULT_STATUS_COLOR;
 }
 
-function formatStatus(status: string): string {
-  return status.replace(/_/g, " ");
+function getStatusLabel(status: string): string {
+  return STATUS_LABELS[status] ?? status;
 }
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return "";
   const d = new Date(dateStr);
-  return d.toLocaleDateString("en-GB", {
+  return d.toLocaleDateString("en-AE", {
     day: "numeric",
     month: "short",
-    year: "numeric",
   });
 }
 
-function ClientCard({ item }: { item: ClientRecord }) {
-  const status = item.status as ClientStatus;
+function ClientRow({ item, isLast }: { item: ClientRecord; isLast: boolean }) {
+  const commissionValue =
+    item.commission_amount != null
+      ? item.commission_amount
+      : item.estimated_commission ?? 0;
+
   return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.cardNameRow}>
-          <View style={styles.clientAvatar}>
-            <Text style={styles.clientInitial}>
-              {(item.client_name || "?")[0].toUpperCase()}
-            </Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.clientName} numberOfLines={1}>
-              {item.client_name}
-            </Text>
-            <Text style={styles.clientDate}>
-              {formatDate(item.created_at)}
-            </Text>
-          </View>
-        </View>
-        <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: getStatusColor(status) + "18" },
-          ]}
-        >
-          <Text
-            style={[styles.statusText, { color: getStatusColor(status) }]}
-          >
-            {formatStatus(status)}
+    <View style={[styles.row, isLast && { borderBottomWidth: 0 }]}>
+      <View style={styles.rowTop}>
+        <View style={styles.rowTopLeft}>
+          <Text style={styles.clientName} numberOfLines={1}>
+            {item.client_name}
           </Text>
+          <Text style={styles.clientDate}>{formatDate(item.created_at)}</Text>
         </View>
+        <Text style={[styles.statusLabel, { color: getStatusColor(item.status) }]}>
+          {getStatusLabel(item.status)}
+        </Text>
       </View>
-      <View style={styles.cardFooter}>
-        <View style={styles.cardStat}>
-          <Text style={styles.cardStatLabel}>Loan Amount</Text>
-          <Text style={styles.cardStatValue}>
+      <View style={styles.rowBottom}>
+        <View>
+          <Text style={styles.fieldLabel}>Loan Amount</Text>
+          <Text style={styles.loanValue}>
             AED {(item.expected_mortgage_amount ?? 0).toLocaleString("en-AE")}
           </Text>
         </View>
-        {item.commission != null && (
-          <View style={[styles.cardStat, { alignItems: "flex-end" as const }]}>
-            <Text style={styles.cardStatLabel}>Commission</Text>
-            <Text style={[styles.cardStatValue, { color: Colors.primary }]}>
-              AED {(item.commission ?? 0).toLocaleString("en-AE")}
-            </Text>
-          </View>
-        )}
+        <View style={{ alignItems: "flex-end" as const }}>
+          <Text style={styles.fieldLabel}>Est. Commission</Text>
+          <Text style={styles.commissionValue}>
+            AED {commissionValue.toLocaleString("en-AE")}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -99,7 +96,6 @@ function ClientCard({ item }: { item: ClientRecord }) {
 
 export default function ClientsScreen() {
   const insets = useSafeAreaInsets();
-  const webTopPad = Platform.OS === "web" ? 67 : 0;
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -129,21 +125,30 @@ export default function ClientsScreen() {
     queryFn: () => getClients(debouncedSearch || undefined),
   });
 
-  const clients: ClientRecord[] = Array.isArray(data)
-    ? data
-    : (data as { results?: ClientRecord[] })?.results ?? [];
+  const clients: ClientRecord[] = data ?? [];
 
   return (
     <View style={styles.container}>
       <View
         style={[
           styles.headerSection,
-          { paddingTop: insets.top + webTopPad + 16 },
+          { paddingTop: insets.top > 0 ? insets.top : 48 },
         ]}
       >
-        <Text style={styles.pageTitle}>Clients</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.pageTitle}>Clients</Text>
+          <Pressable
+            onPress={() => router.push("/submit-lead")}
+            style={({ pressed }) => [
+              styles.addClientBtn,
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <Text style={styles.addClientBtnText}>Add Client</Text>
+          </Pressable>
+        </View>
         <View style={styles.searchRow}>
-          <Feather
+          <Ionicons
             name="search"
             size={18}
             color={Colors.textMuted}
@@ -158,23 +163,26 @@ export default function ClientsScreen() {
             autoCorrect={false}
           />
           {search.length > 0 && (
-            <Feather
-              name="x"
-              size={18}
-              color={Colors.textMuted}
+            <TouchableOpacity
               onPress={() => {
                 setSearch("");
                 setDebouncedSearch("");
               }}
-              style={styles.searchClear}
-            />
+            >
+              <Ionicons
+                name="close"
+                size={18}
+                color={Colors.textMuted}
+                style={styles.searchClear}
+              />
+            </TouchableOpacity>
           )}
         </View>
       </View>
 
       {isLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size={24} color="#FFFFFF" />
         </View>
       ) : (
         <FlatList
@@ -182,11 +190,11 @@ export default function ClientsScreen() {
           keyExtractor={(item, idx) =>
             item.id?.toString() ?? idx.toString()
           }
-          renderItem={({ item }) => <ClientCard item={item} />}
+          renderItem={({ item, index }) => (
+            <ClientRow item={item} isLast={index === clients.length - 1} />
+          )}
           contentContainerStyle={{
-            paddingHorizontal: 20,
             paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 20,
-            paddingTop: 8,
           }}
           showsVerticalScrollIndicator={false}
           scrollEnabled={clients.length > 0}
@@ -199,12 +207,7 @@ export default function ClientsScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Feather
-                name="users"
-                size={40}
-                color={Colors.textMuted}
-              />
-              <Text style={styles.emptyTitle}>No clients yet</Text>
+              <Text style={styles.emptyTitle}>No clients yet.</Text>
               <Text style={styles.emptyText}>
                 Submit your first client to start earning
               </Text>
@@ -227,132 +230,120 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerSection: {
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
+    backgroundColor: "#000000",
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#27272A",
+  },
+  titleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
   },
   pageTitle: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 28,
+    fontSize: 30,
+    fontWeight: "500",
     color: Colors.text,
-    marginBottom: 16,
+  },
+  addClientBtn: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  addClientBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000000",
   },
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.surface,
+    backgroundColor: "#18181B",
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
     paddingHorizontal: 12,
-    height: 44,
+    height: 48,
   },
   searchIcon: {
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    fontFamily: "Inter_400Regular",
     fontSize: 15,
     color: Colors.text,
-    height: 44,
+    height: 48,
   },
   searchClear: {
     padding: 4,
   },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
+  row: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#27272A",
   },
-  cardHeader: {
+  rowTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 14,
+    marginBottom: 8,
   },
-  cardNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+  rowTopLeft: {
     flex: 1,
     marginRight: 10,
   },
-  clientAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.primary + "15",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  clientInitial: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
-    color: Colors.primary,
-  },
   clientName: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
+    fontSize: 18,
+    fontWeight: "500",
     color: Colors.text,
+    flexShrink: 1,
   },
   clientDate: {
-    fontFamily: "Inter_400Regular",
     fontSize: 12,
     color: Colors.textMuted,
-    marginTop: 2,
+    marginTop: 4,
   },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  statusText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 11,
-    textTransform: "uppercase",
+  statusLabel: {
+    fontSize: 12,
+    fontWeight: "500",
     letterSpacing: 0.5,
   },
-  cardFooter: {
+  rowBottom: {
     flexDirection: "row",
     justifyContent: "space-between",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-    paddingTop: 12,
+    alignItems: "flex-start",
+    marginTop: 4,
   },
-  cardStat: {
-    gap: 2,
-  },
-  cardStatLabel: {
-    fontFamily: "Inter_400Regular",
+  fieldLabel: {
     fontSize: 12,
     color: Colors.textMuted,
+    marginBottom: 2,
   },
-  cardStatValue: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 14,
-    color: Colors.text,
+  loanValue: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#D4D4D8",
+  },
+  commissionValue: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: "#FFFFFF",
   },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
     paddingTop: 80,
-    gap: 10,
+    gap: 8,
   },
   emptyTitle: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 18,
-    color: Colors.text,
-    marginTop: 8,
+    fontSize: 16,
+    color: "#71717A",
   },
   emptyText: {
-    fontFamily: "Inter_400Regular",
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: "#71717A",
     textAlign: "center",
   },
 });

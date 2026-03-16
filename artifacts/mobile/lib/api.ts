@@ -69,14 +69,10 @@ export interface ClientRecord {
   client_phone: string;
   expected_mortgage_amount: number;
   commission: number;
-  commission_amount?: number;
-  estimated_commission?: number;
+  commission_amount: number | null;
+  estimated_commission: number;
   status: string;
   created_at: string;
-}
-
-export interface ClientsResponse {
-  results?: ClientRecord[];
 }
 
 export interface ReferredAgent {
@@ -168,11 +164,9 @@ export async function getMe(): Promise<AgentProfile> {
 
 export async function getClients(
   search?: string,
-  status?: string,
-): Promise<ClientRecord[] | ClientsResponse> {
+): Promise<ClientRecord[]> {
   const params = new URLSearchParams();
   if (search) params.set("search", search);
-  if (status && status !== "All") params.set("status", status.toUpperCase());
   const query = params.toString() ? `?${params.toString()}` : "";
   const res = await apiFetch(`/clients/${query}`);
   if (!res.ok) throw new Error("Failed to fetch clients");

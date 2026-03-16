@@ -126,7 +126,7 @@ export default function NetworkScreen() {
         />
       }
     >
-      <Text style={styles.pageTitle}>Network</Text>
+      <Text style={styles.pageTitle}>My network</Text>
 
       <View style={styles.codeCard}>
         <Text style={styles.codeLabel}>Your Referral Code</Text>
@@ -251,6 +251,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: Colors.text,
     marginBottom: 24,
+    textAlign: "center",
   },
   codeCard: {
     backgroundColor: Colors.surface,
