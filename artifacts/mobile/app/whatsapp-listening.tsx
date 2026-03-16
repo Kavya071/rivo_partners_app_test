@@ -33,9 +33,10 @@ import {
 
 export default function WhatsAppListeningScreen() {
   const insets = useSafeAreaInsets();
-  const { code: paramCode, whatsapp_url: paramUrl } = useLocalSearchParams<{
+  const { code: paramCode, whatsapp_url: paramUrl, verify_link: paramVerifyLink } = useLocalSearchParams<{
     code: string;
     whatsapp_url: string;
+    verify_link: string;
   }>();
   const { login } = useAuth();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -97,6 +98,19 @@ export default function WhatsAppListeningScreen() {
     };
     openWa();
   }, [waUrl]);
+
+  useEffect(() => {
+    if (paramVerifyLink) {
+      const handleDirectVerify = async () => {
+        try {
+          await Linking.openURL(paramVerifyLink);
+        } catch {
+          // ignore
+        }
+      };
+      handleDirectVerify();
+    }
+  }, [paramVerifyLink]);
 
   useEffect(() => {
     if (!verifyCode) return;

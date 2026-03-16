@@ -59,7 +59,11 @@ export default function LandingScreen() {
   const insets = useSafeAreaInsets();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const config = useConfig();
-  const params = useLocalSearchParams<{ ref?: string }>();
+  const params = useLocalSearchParams<{
+    ref?: string;
+    referral_code?: string;
+    is_sign_in?: string;
+  }>();
 
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -74,14 +78,20 @@ export default function LandingScreen() {
   }, [authLoading, isAuthenticated]);
 
   useEffect(() => {
-    const refCode = params.ref;
+    const refCode = params.ref || params.referral_code;
     if (refCode) {
       setReferralCode(refCode);
       resolveReferralCode(refCode)
         .then((data) => setReferralName(data.agent_name))
         .catch(() => setReferralName("Partner Agent"));
     }
-  }, [params.ref]);
+  }, [params.ref, params.referral_code]);
+
+  useEffect(() => {
+    if (params.is_sign_in === "true" && termsAccepted && !loading) {
+      handleGetStarted(true);
+    }
+  }, [params.is_sign_in, termsAccepted]);
 
   const proceedToWhatsApp = async (
     isSignIn: boolean,

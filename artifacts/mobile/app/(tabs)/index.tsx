@@ -186,38 +186,70 @@ export default function HomeScreen() {
         </Animated.View>
       )}
 
+      <Animated.View entering={FadeInDown.delay(350).duration(500)}>
+        <Pressable
+          onPress={() => router.push("/referral-bonus")}
+          style={({ pressed }) => [
+            styles.referralBonusCard,
+            pressed && { opacity: 0.8 },
+          ]}
+        >
+          <View style={styles.referralBonusIcon}>
+            <Ionicons name="gift" size={22} color={Colors.primary} />
+          </View>
+          <View style={styles.referralBonusContent}>
+            <Text style={styles.referralBonusTitle}>Referral Bonuses</Text>
+            <Text style={styles.referralBonusDesc}>
+              Earn up to AED {config.REFERRAL_BONUS.TOTAL_POTENTIAL.toLocaleString()} per agent
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={Colors.textMuted} />
+        </Pressable>
+      </Animated.View>
+
       {banners.length > 0 && (
         <Animated.View entering={FadeInDown.delay(400).duration(500)}>
           <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Updates</Text>
-          {banners.map((banner: HomeBanner) => (
-            <Pressable
-              key={banner.id}
-              onPress={() => {
-                if (banner.cta_link) {
-                  if (banner.cta_link.startsWith("/")) {
-                    router.push(banner.cta_link as never);
-                  } else {
-                    Linking.openURL(banner.cta_link);
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.bannersScroll}
+          >
+            {banners.map((banner: HomeBanner) => (
+              <Pressable
+                key={banner.id}
+                onPress={() => {
+                  if (banner.cta_link) {
+                    if (banner.cta_link.startsWith("/")) {
+                      router.push(banner.cta_link as never);
+                    } else {
+                      Linking.openURL(banner.cta_link);
+                    }
                   }
-                }
-              }}
-              style={({ pressed }) => [
-                styles.bannerCard,
-                pressed && { opacity: 0.8 },
-              ]}
-            >
-              <Text style={styles.bannerTitle}>{banner.title}</Text>
-              {banner.subtitle ? (
-                <Text style={styles.bannerSubtitle}>{banner.subtitle}</Text>
-              ) : null}
-              {banner.cta_text ? (
-                <View style={styles.bannerCtaRow}>
-                  <Text style={styles.bannerCtaText}>{banner.cta_text}</Text>
-                  <Feather name="chevron-right" size={16} color={Colors.primary} />
-                </View>
-              ) : null}
-            </Pressable>
-          ))}
+                }}
+                style={({ pressed }) => [
+                  styles.bannerCard,
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                {banner.icon ? (
+                  <View style={styles.bannerIconCircle}>
+                    <Text style={styles.bannerIcon}>{banner.icon}</Text>
+                  </View>
+                ) : null}
+                <Text style={styles.bannerTitle}>{banner.title}</Text>
+                {banner.subtitle ? (
+                  <Text style={styles.bannerSubtitle}>{banner.subtitle}</Text>
+                ) : null}
+                {banner.cta_text ? (
+                  <View style={styles.bannerCtaRow}>
+                    <Text style={styles.bannerCtaText}>{banner.cta_text}</Text>
+                    <Feather name="chevron-right" size={16} color={Colors.primary} />
+                  </View>
+                ) : null}
+              </Pressable>
+            ))}
+          </ScrollView>
         </Animated.View>
       )}
     </ScrollView>
@@ -443,13 +475,62 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textMuted,
   },
+  referralBonusCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.primary + "30",
+    marginTop: 20,
+    gap: 14,
+  },
+  referralBonusIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.primary + "15",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  referralBonusContent: {
+    flex: 1,
+  },
+  referralBonusTitle: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  referralBonusDesc: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: Colors.primary,
+  },
+  bannersScroll: {
+    gap: 12,
+    paddingRight: 4,
+  },
   bannerCard: {
     backgroundColor: Colors.surface,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
     borderColor: Colors.border,
+    width: 260,
+  },
+  bannerIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary + "15",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 10,
+  },
+  bannerIcon: {
+    fontSize: 20,
   },
   bannerTitle: {
     fontFamily: "Inter_600SemiBold",

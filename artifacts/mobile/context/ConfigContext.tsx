@@ -17,6 +17,10 @@ interface ConfigData {
     AMOUNTS: number[];
     TOTAL_POTENTIAL: number;
   };
+  NEW_AGENT_BONUS: {
+    AMOUNTS: number[];
+    TOTAL_POTENTIAL: number;
+  };
   LINKS: {
     WHATSAPP_PERSONAL: string;
     WHATSAPP_BUSINESS: string;
@@ -34,6 +38,10 @@ const DEFAULTS: ConfigData = {
     AVG_PAYOUT: 9000,
   },
   REFERRAL_BONUS: {
+    AMOUNTS: [500, 500, 1000],
+    TOTAL_POTENTIAL: 2000,
+  },
+  NEW_AGENT_BONUS: {
     AMOUNTS: [500, 500, 1000],
     TOTAL_POTENTIAL: 2000,
   },
@@ -68,6 +76,8 @@ function buildConfig(
   const avg = (data.avg_payout as number) ?? DEFAULTS.COMMISSION.AVG_PAYOUT;
   const bonuses =
     (data.referrer_bonuses as number[]) ?? DEFAULTS.REFERRAL_BONUS.AMOUNTS;
+  const newAgentBonuses =
+    (data.new_agent_bonuses as number[]) ?? DEFAULTS.NEW_AGENT_BONUS.AMOUNTS;
 
   return {
     COMMISSION: {
@@ -78,6 +88,10 @@ function buildConfig(
     REFERRAL_BONUS: {
       AMOUNTS: bonuses,
       TOTAL_POTENTIAL: bonuses.reduce((a: number, b: number) => a + b, 0),
+    },
+    NEW_AGENT_BONUS: {
+      AMOUNTS: newAgentBonuses,
+      TOTAL_POTENTIAL: newAgentBonuses.reduce((a: number, b: number) => a + b, 0),
     },
     LINKS: {
       WHATSAPP_PERSONAL:
