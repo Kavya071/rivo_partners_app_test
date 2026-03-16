@@ -7,7 +7,7 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -19,7 +19,17 @@ import * as Linking from "expo-linking";
 
 import Colors from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
-import { initWhatsApp } from "@/lib/api";
+import { useConfig } from "@/context/ConfigContext";
+import { initWhatsApp, resolveReferralCode } from "@/lib/api";
+import {
+  getWhatsAppPref,
+  setReferralCode,
+  getReferralCode,
+  setVerifyCode,
+  setPendingUrl,
+  WhatsAppType,
+} from "@/lib/whatsapp";
+import WhatsAppPickerSheet from "@/components/WhatsAppPickerSheet";
 
 interface ValueProp {
   title: string;
@@ -48,8 +58,14 @@ const VALUE_PROPS: ValueProp[] = [
 export default function LandingScreen() {
   const insets = useSafeAreaInsets();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const config = useConfig();
+  const params = useLocalSearchParams<{ ref?: string }>();
+
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+  const [referralName, setReferralName] = useState<string | null>(null);
+  const [pendingSignIn, setPendingSignIn] = useState(false);
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
@@ -57,12 +73,33 @@ export default function LandingScreen() {
     }
   }, [authLoading, isAuthenticated]);
 
-  const handleGetStarted = async () => {
-    if (!termsAccepted || loading) return;
+  useEffect(() => {
+    const refCode = params.ref;
+    if (refCode) {
+      setReferralCode(refCode);
+      resolveReferralCode(refCode)
+        .then((data) => setReferralName(data.agent_name))
+        .catch(() => setReferralName("Partner Agent"));
+    }
+  }, [params.ref]);
+
+  const proceedToWhatsApp = async (
+    isSignIn: boolean,
+    whatsappType?: WhatsAppType,
+  ) => {
     setLoading(true);
     try {
-      const { code, whatsapp_url } = await initWhatsApp();
-      await Linking.openURL(whatsapp_url);
+      const storedRef = await getReferralCode();
+      const isBusinessPick = whatsappType === "business";
+      const { code, whatsapp_url } = await initWhatsApp(
+        storedRef || "",
+        isBusinessPick,
+        isSignIn,
+      );
+
+      await setVerifyCode(code);
+      await setPendingUrl(whatsapp_url);
+
       router.push({
         pathname: "/whatsapp-listening",
         params: { code, whatsapp_url },
@@ -72,6 +109,22 @@ export default function LandingScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGetStarted = async (isSignIn = false) => {
+    if (!termsAccepted || loading) return;
+    setPendingSignIn(isSignIn);
+
+    const pref = await getWhatsAppPref();
+    if (pref) {
+      proceedToWhatsApp(isSignIn, pref);
+    } else {
+      setShowPicker(true);
+    }
+  };
+
+  const handlePickerSelect = (type: WhatsAppType) => {
+    proceedToWhatsApp(pendingSignIn, type);
   };
 
   if (authLoading) {
@@ -107,6 +160,16 @@ export default function LandingScreen() {
           </LinearGradient>
           <Text style={styles.logoText}>Rivo Partners</Text>
         </View>
+
+        {referralName && (
+          <View style={styles.referralBadge}>
+            <View style={styles.referralDot} />
+            <View>
+              <Text style={styles.referralLabel}>Referred by</Text>
+              <Text style={styles.referralNameText}>{referralName}</Text>
+            </View>
+          </View>
+        )}
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.heroSection}>
@@ -126,7 +189,9 @@ export default function LandingScreen() {
           <Text style={styles.payoutLabel}>Average Payout</Text>
           <View style={styles.payoutRow}>
             <Text style={styles.payoutCurrency}>AED</Text>
-            <Text style={styles.payoutAmount}>9,000</Text>
+            <Text style={styles.payoutAmount}>
+              {config.COMMISSION.AVG_PAYOUT.toLocaleString()}
+            </Text>
           </View>
           <Text style={styles.payoutSub}>per successful referral</Text>
         </LinearGradient>
@@ -167,7 +232,7 @@ export default function LandingScreen() {
         </Pressable>
 
         <Pressable
-          onPress={handleGetStarted}
+          onPress={() => handleGetStarted(false)}
           disabled={!termsAccepted || loading}
           style={({ pressed }) => [
             styles.ctaButton,
@@ -184,7 +249,24 @@ export default function LandingScreen() {
             </>
           )}
         </Pressable>
+
+        <Pressable
+          onPress={() => handleGetStarted(true)}
+          disabled={!termsAccepted || loading}
+          style={styles.signInRow}
+        >
+          <Text style={[styles.signInText, (!termsAccepted || loading) && { opacity: 0.4 }]}>
+            Already have an account?{" "}
+            <Text style={styles.signInLink}>Sign In</Text>
+          </Text>
+        </Pressable>
       </View>
+
+      <WhatsAppPickerSheet
+        visible={showPicker}
+        onClose={() => setShowPicker(false)}
+        onSelect={handlePickerSelect}
+      />
     </View>
   );
 }
@@ -197,6 +279,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "flex-start",
   },
   logoRow: {
@@ -214,6 +298,35 @@ const styles = StyleSheet.create({
   logoText: {
     fontFamily: "Inter_700Bold",
     fontSize: 20,
+    color: Colors.text,
+  },
+  referralBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 10,
+  },
+  referralDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.primary,
+  },
+  referralLabel: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 10,
+    color: Colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  referralNameText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
     color: Colors.text,
   },
   heroSection: {
@@ -350,5 +463,19 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     fontSize: 17,
     color: "#fff",
+  },
+  signInRow: {
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  signInText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  signInLink: {
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.text,
+    textDecorationLine: "underline",
   },
 });

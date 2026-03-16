@@ -16,15 +16,23 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import * as Haptics from "expo-haptics";
+import { useQuery } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
 import { COUNTRY_CODES } from "@/constants/api";
-import { ingestClient } from "@/lib/api";
+import { ingestClient, getMe } from "@/lib/api";
+import { useConfig } from "@/context/ConfigContext";
 
 export default function SubmitLeadScreen() {
   const insets = useSafeAreaInsets();
   const webTopPad = Platform.OS === "web" ? 67 : 0;
   const webBottomPad = Platform.OS === "web" ? 34 : 0;
+  const config = useConfig();
+
+  const { data: agent } = useQuery({
+    queryKey: ["agent-me"],
+    queryFn: getMe,
+  });
 
   const [clientName, setClientName] = useState("");
   const [loanAmount, setLoanAmount] = useState("");
@@ -32,6 +40,9 @@ export default function SubmitLeadScreen() {
   const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const commissionRate = config.COMMISSION.MIN_PERCENT;
 
   const numericAmount = useMemo(() => {
     const parsed = parseFloat(loanAmount.replace(/,/g, ""));
@@ -39,8 +50,8 @@ export default function SubmitLeadScreen() {
   }, [loanAmount]);
 
   const commission = useMemo(() => {
-    return (numericAmount * 0.45) / 100;
-  }, [numericAmount]);
+    return (numericAmount * commissionRate) / 100;
+  }, [numericAmount, commissionRate]);
 
   const sanitizedPhone = useMemo(() => {
     return phone.replace(/\D/g, "");
@@ -50,27 +61,39 @@ export default function SubmitLeadScreen() {
     return sanitizedPhone.length === selectedCountry.digits;
   }, [sanitizedPhone, selectedCountry]);
 
+  const fullClientPhone = `${selectedCountry.code}${sanitizedPhone}`;
+  const isSelfReferral = isPhoneValid && agent?.phone === fullClientPhone;
+
   const canSubmit =
     clientName.trim().length > 0 &&
     numericAmount > 0 &&
     isPhoneValid &&
-    !submitting;
+    !submitting &&
+    !isSelfReferral;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
+    setError("");
     try {
       await ingestClient({
         client_name: clientName.trim(),
-        client_phone: `${selectedCountry.code}${sanitizedPhone}`,
+        client_phone: fullClientPhone,
         expected_mortgage_amount: numericAmount,
       });
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       router.replace("/referral-success");
-    } catch (e) {
-      Alert.alert("Error", "Failed to submit client. Please try again.");
+    } catch (err: unknown) {
+      const apiErr = err as Record<string, string[]>;
+      if (apiErr?.client_phone) {
+        setError(apiErr.client_phone[0]);
+      } else if (apiErr?.non_field_errors) {
+        setError(apiErr.non_field_errors[0]);
+      } else {
+        setError("Failed to submit client. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -143,7 +166,7 @@ export default function SubmitLeadScreen() {
           </View>
           {numericAmount > 0 && (
             <Text style={styles.calcHelper}>
-              {numericAmount.toLocaleString("en-AE")} x 0.45% = AED{" "}
+              {numericAmount.toLocaleString("en-AE")} x {commissionRate}% = AED{" "}
               {commission.toLocaleString("en-AE", { maximumFractionDigits: 0 })}
             </Text>
           )}
@@ -167,7 +190,10 @@ export default function SubmitLeadScreen() {
             <TextInput
               style={[styles.textInput, styles.phoneInput]}
               value={phone}
-              onChangeText={(text: string) => setPhone(text.replace(/\D/g, ""))}
+              onChangeText={(text: string) => {
+                setPhone(text.replace(/\D/g, ""));
+                if (error) setError("");
+              }}
               placeholder={`${selectedCountry.digits} digits`}
               placeholderTextColor={Colors.textMuted}
               keyboardType="phone-pad"
@@ -180,7 +206,18 @@ export default function SubmitLeadScreen() {
               {selectedCountry.country}
             </Text>
           )}
+          {isSelfReferral && (
+            <Text style={styles.errorHelper}>
+              You cannot submit yourself as a client.
+            </Text>
+          )}
         </View>
+
+        {error ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>{error}</Text>
+          </View>
+        ) : null}
 
         <Text style={styles.consentText}>
           By submitting, I confirm that I have the client's consent to share
@@ -401,6 +438,18 @@ const styles = StyleSheet.create({
     color: Colors.danger,
     marginLeft: 2,
     marginTop: 2,
+  },
+  errorBanner: {
+    backgroundColor: Colors.danger + "10",
+    borderWidth: 1,
+    borderColor: Colors.danger + "20",
+    borderRadius: 12,
+    padding: 12,
+  },
+  errorBannerText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: Colors.danger,
   },
   consentText: {
     fontFamily: "Inter_400Regular",

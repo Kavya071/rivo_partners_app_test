@@ -22,20 +22,45 @@ import * as Linking from "expo-linking";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
 import { checkVerification } from "@/lib/api";
+import {
+  getPendingUrl,
+  clearPendingUrl,
+  getVerifyCode,
+  clearVerifyCode,
+  clearReferralCode,
+  openWhatsAppFromUrl,
+} from "@/lib/whatsapp";
 
 export default function WhatsAppListeningScreen() {
   const insets = useSafeAreaInsets();
-  const { code, whatsapp_url } = useLocalSearchParams<{
+  const { code: paramCode, whatsapp_url: paramUrl } = useLocalSearchParams<{
     code: string;
     whatsapp_url: string;
   }>();
   const { login } = useAuth();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [errorCount, setErrorCount] = useState(0);
+  const hasAutoOpened = useRef(false);
+  const [verifyCode, setVerifyCodeState] = useState(paramCode || "");
+  const [waUrl, setWaUrl] = useState(paramUrl || "");
 
   const pulseScale = useSharedValue(1);
   const pulseOpacity = useSharedValue(0.4);
   const dotOpacity = useSharedValue(0.3);
+
+  useEffect(() => {
+    const loadStored = async () => {
+      if (!verifyCode) {
+        const stored = await getVerifyCode();
+        if (stored) setVerifyCodeState(stored);
+      }
+      if (!waUrl) {
+        const stored = await getPendingUrl();
+        if (stored) setWaUrl(stored);
+      }
+    };
+    loadStored();
+  }, []);
 
   useEffect(() => {
     pulseScale.value = withRepeat(
@@ -56,14 +81,40 @@ export default function WhatsAppListeningScreen() {
   }, []);
 
   useEffect(() => {
-    if (!code) return;
+    if (!waUrl || hasAutoOpened.current) return;
+    hasAutoOpened.current = true;
+    const openWa = async () => {
+      await clearPendingUrl();
+      try {
+        await openWhatsAppFromUrl(waUrl);
+      } catch {
+        try {
+          await Linking.openURL(waUrl);
+        } catch {
+          // ignore
+        }
+      }
+    };
+    openWa();
+  }, [waUrl]);
+
+  useEffect(() => {
+    if (!verifyCode) return;
     intervalRef.current = setInterval(async () => {
       try {
-        const result = await checkVerification(code);
+        const result = await checkVerification(verifyCode);
         if (result.verified && result.token) {
           if (intervalRef.current) clearInterval(intervalRef.current);
           await login(result.token);
-          router.replace("/(tabs)");
+          await clearVerifyCode();
+          await clearReferralCode();
+
+          const agent = result.agent;
+          if (agent && !agent.has_completed_first_action) {
+            router.replace("/referral-bonus");
+          } else {
+            router.replace("/(tabs)");
+          }
         }
       } catch (_e) {
         setErrorCount((c) => c + 1);
@@ -73,7 +124,7 @@ export default function WhatsAppListeningScreen() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [code]);
+  }, [verifyCode]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
@@ -85,6 +136,16 @@ export default function WhatsAppListeningScreen() {
   }));
 
   const webTopPad = Platform.OS === "web" ? 67 : 0;
+
+  const handleOpenWhatsApp = async () => {
+    if (waUrl) {
+      try {
+        await openWhatsAppFromUrl(waUrl);
+      } catch {
+        await Linking.openURL(waUrl);
+      }
+    }
+  };
 
   return (
     <View
@@ -110,8 +171,7 @@ export default function WhatsAppListeningScreen() {
         <Animated.View entering={FadeIn.delay(300).duration(600)} style={styles.textSection}>
           <Text style={styles.heading}>Tap Send in WhatsApp</Text>
           <Text style={styles.subText}>
-            We sent a verification message to WhatsApp. Tap send to verify your
-            account.
+            A message with your code is ready — just hit send.
           </Text>
         </Animated.View>
 
@@ -131,9 +191,7 @@ export default function WhatsAppListeningScreen() {
       </View>
 
       <Pressable
-        onPress={() => {
-          if (whatsapp_url) Linking.openURL(whatsapp_url);
-        }}
+        onPress={handleOpenWhatsApp}
         style={({ pressed }) => [
           styles.openAgainBtn,
           pressed && styles.openAgainPressed,

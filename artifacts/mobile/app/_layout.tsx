@@ -16,6 +16,7 @@ import { StatusBar } from "expo-status-bar";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/context/AuthContext";
+import { ConfigProvider } from "@/context/ConfigContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -40,6 +41,14 @@ function RootLayoutNav() {
       <Stack.Screen
         name="referral-success"
         options={{ presentation: "card", gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="referral-bonus"
+        options={{ presentation: "card", gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="referral-info"
+        options={{ presentation: "card" }}
       />
     </Stack>
   );
@@ -66,12 +75,14 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <KeyboardProvider>
-                <StatusBar style="light" />
-                <RootLayoutNav />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
+            <ConfigProvider>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <KeyboardProvider>
+                  <StatusBar style="light" />
+                  <RootLayoutNav />
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </ConfigProvider>
           </AuthProvider>
         </QueryClientProvider>
       </ErrorBoundary>

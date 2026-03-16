@@ -17,9 +17,11 @@ import { useQuery } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
 
 import Colors from "@/constants/colors";
 import { getNetwork, ReferredAgent } from "@/lib/api";
+import { useConfig } from "@/context/ConfigContext";
 
 const TAB_BAR_HEIGHT = 84;
 
@@ -41,9 +43,17 @@ const HOW_IT_WORKS = [
   },
 ];
 
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-AE", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function NetworkScreen() {
   const insets = useSafeAreaInsets();
   const webTopPad = Platform.OS === "web" ? 67 : 0;
+  const config = useConfig();
 
   const {
     data: networkData,
@@ -55,9 +65,18 @@ export default function NetworkScreen() {
     queryFn: getNetwork,
   });
 
-  const referralCode = networkData?.referral_code ?? "RIVO-XXXX";
+  const referralCode = networkData?.agent_code ?? "RIVO-XXXX";
   const referredAgents: ReferredAgent[] = networkData?.referred_agents ?? [];
-  const referralLink = `https://rivo.partners/join/${referralCode}`;
+  const bonusSummary = networkData?.bonus_summary;
+  const referralLink = `https://partners.rivo.ae?ref=${referralCode}`;
+
+  const getShareMessage = () => {
+    const msg = config.MESSAGES.SHARE_TEXT;
+    if (msg.includes("{url}")) {
+      return msg.replace("{url}", referralLink);
+    }
+    return msg + referralLink;
+  };
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(referralLink);
@@ -68,7 +87,7 @@ export default function NetworkScreen() {
   };
 
   const handleShare = async () => {
-    const message = `Join Rivo Partners and earn on every mortgage referral! Use my code: ${referralCode}\n\n${referralLink}`;
+    const message = getShareMessage();
     try {
       const canShare =
         Platform.OS !== "web" && (await Sharing.isAvailableAsync());
@@ -134,6 +153,16 @@ export default function NetworkScreen() {
             <Text style={styles.copyBtnText}>Copy link</Text>
           </Pressable>
         </View>
+
+        <Pressable
+          onPress={() => router.push("/referral-info")}
+          style={styles.knowMoreRow}
+        >
+          <Text style={styles.knowMoreText}>
+            Know more about the referral program
+          </Text>
+          <Feather name="chevron-right" size={16} color={Colors.primary} />
+        </Pressable>
       </View>
 
       <View style={styles.howItWorks}>
@@ -152,30 +181,58 @@ export default function NetworkScreen() {
         ))}
       </View>
 
-      {referredAgents.length > 0 && (
-        <View style={styles.referredSection}>
+      <View style={styles.referredSection}>
+        <View style={styles.networkTitleRow}>
+          <Feather name="users" size={18} color={Colors.text} />
           <Text style={styles.sectionTitle}>Your Network</Text>
-          {referredAgents.map((agent, i) => (
-            <View key={i} style={styles.agentCard}>
+          {bonusSummary?.completed && (
+            <View style={styles.completedBadge}>
+              <Text style={styles.completedBadgeText}>Completed</Text>
+            </View>
+          )}
+        </View>
+
+        {referredAgents.length === 0 ? (
+          <Text style={styles.emptyText}>
+            No agents in your network yet. Share your link to start earning
+            bonuses.
+          </Text>
+        ) : (
+          referredAgents.map((agent) => (
+            <View
+              key={agent.id}
+              style={[
+                styles.agentCard,
+                agent.deals_count === 0 && { opacity: 0.5 },
+              ]}
+            >
               <View style={styles.agentAvatar}>
                 <Feather name="user" size={16} color={Colors.primary} />
               </View>
               <View style={styles.agentInfo}>
-                <Text style={styles.agentName}>{agent.name ?? "Agent"}</Text>
+                <Text style={styles.agentName}>{agent.name || "Agent"}</Text>
                 <Text style={styles.agentStat}>
-                  {agent.deals_count ?? 0} deals
+                  Joined {formatDate(agent.created_at)} &middot;{" "}
+                  {agent.deals_count}/{bonusSummary?.max_bonuses ?? config.REFERRAL_BONUS.AMOUNTS.length} Deals
                 </Text>
               </View>
               <View style={styles.agentBonus}>
                 <Text style={styles.bonusLabel}>Bonus</Text>
-                <Text style={styles.bonusValue}>
-                  AED {(agent.bonus ?? 0).toLocaleString("en-AE")}
+                <Text
+                  style={[
+                    styles.bonusValue,
+                    agent.bonus_earned > 0
+                      ? { color: Colors.primary }
+                      : { color: Colors.textMuted },
+                  ]}
+                >
+                  +AED {agent.bonus_earned}
                 </Text>
               </View>
             </View>
-          ))}
-        </View>
-      )}
+          ))
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -213,7 +270,7 @@ const styles = StyleSheet.create({
   codeText: {
     fontFamily: "Inter_700Bold",
     fontSize: 32,
-    color: Colors.primary,
+    color: Colors.text,
     letterSpacing: 3,
     marginBottom: 20,
   },
@@ -254,6 +311,20 @@ const styles = StyleSheet.create({
   btnPressed: {
     opacity: 0.8,
     transform: [{ scale: 0.98 }],
+  },
+  knowMoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+  },
+  knowMoreText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    color: Colors.primary,
   },
   howItWorks: {
     marginBottom: 28,
@@ -307,7 +378,32 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 19,
   },
-  referredSection: {},
+  referredSection: {
+    marginBottom: 20,
+  },
+  networkTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 16,
+  },
+  completedBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: Colors.primary + "15",
+    borderRadius: 10,
+  },
+  completedBadgeText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    color: Colors.primary,
+  },
+  emptyText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: Colors.textMuted,
+    lineHeight: 20,
+  },
   agentCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -349,6 +445,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 11,
     color: Colors.textMuted,
+    textTransform: "uppercase",
   },
   bonusValue: {
     fontFamily: "Inter_600SemiBold",

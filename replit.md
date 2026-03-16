@@ -26,18 +26,21 @@ artifacts-monorepo/
 │   └── mobile/             # Expo React Native app — Rivo Partners
 │       ├── app/            # Expo Router screens
 │       │   ├── _layout.tsx        # Root layout (providers, Stack navigator)
-│       │   ├── index.tsx          # Landing screen (auth entry)
-│       │   ├── whatsapp-listening.tsx  # WhatsApp OTP polling screen
-│       │   ├── submit-lead.tsx    # Lead submission form
+│       │   ├── index.tsx          # Landing screen (referral badge, sign-in, WA picker)
+│       │   ├── whatsapp-listening.tsx  # WhatsApp OTP polling + auto-open
+│       │   ├── submit-lead.tsx    # Lead submission (config rates, self-referral check)
 │       │   ├── referral-success.tsx  # Success animation screen
+│       │   ├── referral-bonus.tsx # Post-first-login bonus timeline screen
+│       │   ├── referral-info.tsx  # Referral program explainer screen
 │       │   └── (tabs)/           # Bottom tab navigator
 │       │       ├── _layout.tsx    # Tab bar config
-│       │       ├── index.tsx      # Home tab (earnings dashboard)
+│       │       ├── index.tsx      # Home tab (earnings, commission badge, banners)
 │       │       ├── clients.tsx    # Clients tab (search + list)
-│       │       ├── network.tsx    # Network tab (referral code)
-│       │       └── profile.tsx    # Profile tab (edit + sign out)
-│       ├── context/        # AuthContext (AsyncStorage token management)
-│       ├── lib/            # API client (fetch wrapper with Bearer token)
+│       │       ├── network.tsx    # Network tab (referral code, config share, referral-info link)
+│       │       └── profile.tsx    # Profile tab (edit mode, RERA, agent_type_other)
+│       ├── context/        # AuthContext, ConfigContext
+│       ├── lib/            # API client, WhatsApp utilities
+│       ├── components/     # WhatsAppPickerSheet, ErrorBoundary, KeyboardAwareScrollViewCompat
 │       └── constants/      # Colors (dark theme), API config, country codes
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
@@ -58,7 +61,7 @@ Mortgage referral platform for Dubai real estate agents. Frontend-only Expo app 
 ### External API
 - Base URL: `https://rivo-partners-backend-331738587654.asia-southeast1.run.app/api/v1`
 - Auth: WhatsApp OTP flow → Bearer token stored in AsyncStorage
-- Endpoints: `/agents/init-whatsapp/`, `/agents/check-verification/{code}/`, `/agents/me/`, `/agents/network/`, `/agents/profile/`, `/agents/logout/`, `/agents/delete/`, `/clients/`, `/clients/ingest/`
+- Endpoints: `/agents/init-whatsapp/`, `/agents/check-verification/{code}/`, `/agents/me/`, `/agents/network/`, `/agents/profile/`, `/agents/logout/`, `/agents/delete/`, `/agents/referral/{code}/`, `/clients/`, `/clients/ingest/`, `/config/`
 
 ### Design System
 - Background: #000000 (pure black)
@@ -68,9 +71,19 @@ Mortgage referral platform for Dubai real estate agents. Frontend-only Expo app 
 - Text: white (#FFFFFF) primary, #a1a1aa secondary
 - Font: Inter (400, 500, 600, 700)
 
+### Context Providers
+- **AuthContext** — AsyncStorage token management, login/signOut/isAuthenticated
+- **ConfigContext** — Fetches `/config/` on mount, provides commission rates, referral bonuses, WhatsApp URLs, share messages, home banners with fallback defaults
+
+### WhatsApp Utilities (`lib/whatsapp.ts`)
+- WhatsApp type preference (personal/business) persisted in AsyncStorage
+- Deep link builders for personal WhatsApp, WhatsApp Business (iOS/Android)
+- Verify code and referral code storage helpers
+
 ### Navigation
-- Root: Stack navigator (Landing → WhatsApp Listening → Tabs, Submit Lead, Referral Success)
+- Root: Stack navigator (Landing → WhatsApp Listening → Tabs, Submit Lead, Referral Success, Referral Bonus, Referral Info)
 - Tabs: Home, Clients, Network, Profile
+- Post-login routing: if `!has_completed_first_action` → Referral Bonus screen, else → Tabs
 
 ## TypeScript & Composite Projects
 

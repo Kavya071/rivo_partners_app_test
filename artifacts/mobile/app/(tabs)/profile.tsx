@@ -30,6 +30,8 @@ const DEFAULT_AGENT_TYPES = [
   "Other",
 ];
 
+const RERA_AGENT_TYPES = ["Agency Agent", "Broker"];
+
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const webTopPad = Platform.OS === "web" ? 67 : 0;
@@ -44,8 +46,11 @@ export default function ProfileScreen() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [agentType, setAgentType] = useState("");
+  const [agentTypeOther, setAgentTypeOther] = useState("");
+  const [reraNumber, setReraNumber] = useState("");
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const agentTypeOptions = useMemo(() => {
     if (agent?.agent_type_options && Array.isArray(agent.agent_type_options) && agent.agent_type_options.length > 0) {
@@ -59,17 +64,37 @@ export default function ProfileScreen() {
       setName(agent.name ?? "");
       setEmail(agent.email ?? "");
       setAgentType(agent.agent_type ?? "");
+      setAgentTypeOther(agent.agent_type_other ?? "");
+      setReraNumber(agent.rera_number ?? "");
+      if (!agent.is_profile_complete) {
+        setIsEditing(true);
+      }
     }
   }, [agent]);
+
+  const showReraField = RERA_AGENT_TYPES.includes(agentType);
+  const showOtherField = agentType === "Other";
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateProfile({ name, email, agent_type: agentType });
+      const payload: Record<string, string> = {
+        name,
+        email,
+        agent_type: agentType,
+      };
+      if (showOtherField) {
+        payload.agent_type_other = agentTypeOther;
+      }
+      if (showReraField) {
+        payload.rera_number = reraNumber;
+      }
+      await updateProfile(payload);
       queryClient.invalidateQueries({ queryKey: ["agent-me"] });
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
+      setIsEditing(false);
       Alert.alert("Saved", "Profile updated successfully");
     } catch (_e) {
       Alert.alert("Error", "Failed to update profile");
@@ -138,14 +163,22 @@ export default function ProfileScreen() {
       }}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.pageTitle}>Profile</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.pageTitle}>Profile</Text>
+        {!isEditing && (
+          <Pressable onPress={() => setIsEditing(true)} style={styles.editBtn}>
+            <Feather name="edit-2" size={16} color={Colors.primary} />
+            <Text style={styles.editBtnText}>Edit</Text>
+          </Pressable>
+        )}
+      </View>
 
       <View style={styles.profileHeader}>
         <View style={styles.avatarLarge}>
           <Feather name="user" size={32} color={Colors.primary} />
         </View>
-        <Text style={styles.profileName}>{agent?.name ?? "Partner"}</Text>
-        <Text style={styles.profilePhone}>{agent?.phone ?? ""}</Text>
+        <Text style={styles.profileName}>{agent?.name || "Partner"}</Text>
+        <Text style={styles.profilePhone}>{agent?.phone || ""}</Text>
         <View style={styles.verifiedBadge}>
           <Ionicons name="checkmark-circle" size={16} color={Colors.primary} />
           <Text style={styles.verifiedText}>Verified Partner</Text>
@@ -156,19 +189,20 @@ export default function ProfileScreen() {
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>Full Name</Text>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, !isEditing && styles.textInputDisabled]}
             value={name}
             onChangeText={setName}
             placeholderTextColor={Colors.textMuted}
             placeholder="Your full name"
+            editable={isEditing}
           />
         </View>
 
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>Agent Type</Text>
           <Pressable
-            onPress={() => setShowTypePicker(!showTypePicker)}
-            style={styles.selectInput}
+            onPress={() => isEditing && setShowTypePicker(!showTypePicker)}
+            style={[styles.selectInput, !isEditing && styles.textInputDisabled]}
           >
             <Text
               style={[
@@ -178,13 +212,15 @@ export default function ProfileScreen() {
             >
               {agentType || "Select type"}
             </Text>
-            <Feather
-              name={showTypePicker ? "chevron-up" : "chevron-down"}
-              size={18}
-              color={Colors.textMuted}
-            />
+            {isEditing && (
+              <Feather
+                name={showTypePicker ? "chevron-up" : "chevron-down"}
+                size={18}
+                color={Colors.textMuted}
+              />
+            )}
           </Pressable>
-          {showTypePicker && (
+          {showTypePicker && isEditing && (
             <View style={styles.pickerDropdown}>
               {agentTypeOptions.map((type) => (
                 <Pressable
@@ -216,34 +252,65 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {showOtherField && (
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Specify Agent Type</Text>
+            <TextInput
+              style={[styles.textInput, !isEditing && styles.textInputDisabled]}
+              value={agentTypeOther}
+              onChangeText={setAgentTypeOther}
+              placeholderTextColor={Colors.textMuted}
+              placeholder="e.g. Mortgage Advisor"
+              editable={isEditing}
+            />
+          </View>
+        )}
+
+        {showReraField && (
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>RERA Number</Text>
+            <TextInput
+              style={[styles.textInput, !isEditing && styles.textInputDisabled]}
+              value={reraNumber}
+              onChangeText={setReraNumber}
+              placeholderTextColor={Colors.textMuted}
+              placeholder="Enter your RERA number"
+              editable={isEditing}
+            />
+          </View>
+        )}
+
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>Email</Text>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, !isEditing && styles.textInputDisabled]}
             value={email}
             onChangeText={setEmail}
             placeholder="your@email.com"
             placeholderTextColor={Colors.textMuted}
             keyboardType="email-address"
             autoCapitalize="none"
+            editable={isEditing}
           />
         </View>
 
-        <Pressable
-          onPress={handleSave}
-          disabled={saving}
-          style={({ pressed }) => [
-            styles.saveBtn,
-            saving && styles.saveBtnDisabled,
-            pressed && !saving && styles.btnPressed,
-          ]}
-        >
-          {saving ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={styles.saveBtnText}>Save Changes</Text>
-          )}
-        </Pressable>
+        {isEditing && (
+          <Pressable
+            onPress={handleSave}
+            disabled={saving}
+            style={({ pressed }) => [
+              styles.saveBtn,
+              saving && styles.saveBtnDisabled,
+              pressed && !saving && styles.btnPressed,
+            ]}
+          >
+            {saving ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.saveBtnText}>Save Changes</Text>
+            )}
+          </Pressable>
+        )}
       </View>
 
       <View style={styles.dangerSection}>
@@ -285,11 +352,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  titleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+  },
   pageTitle: {
     fontFamily: "Inter_700Bold",
     fontSize: 28,
     color: Colors.text,
-    marginBottom: 24,
+  },
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: Colors.primary + "15",
+    borderRadius: 8,
+  },
+  editBtnText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    color: Colors.primary,
   },
   profileHeader: {
     alignItems: "center",
@@ -355,6 +441,9 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 15,
     color: Colors.text,
+  },
+  textInputDisabled: {
+    opacity: 0.6,
   },
   selectInput: {
     backgroundColor: Colors.surface,

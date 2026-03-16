@@ -8,6 +8,7 @@ import {
   Platform,
   ActivityIndicator,
   RefreshControl,
+  Linking,
 } from "react-native";
 import { router } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
@@ -16,17 +17,21 @@ import { useQuery } from "@tanstack/react-query";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import Colors from "@/constants/colors";
-import { getMe } from "@/lib/api";
+import { getMe, HomeBanner } from "@/lib/api";
+import { useConfig } from "@/context/ConfigContext";
 
 const TAB_BAR_HEIGHT = 84;
 
-function formatCurrency(val: number): string {
-  return val?.toLocaleString("en-AE") ?? "0";
+function formatCurrency(val: number | string): string {
+  const num = typeof val === "string" ? parseFloat(val) : val;
+  if (isNaN(num)) return "0";
+  return num.toLocaleString("en-AE");
 }
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const webTopPad = Platform.OS === "web" ? 67 : 0;
+  const config = useConfig();
 
   const {
     data: agent,
@@ -38,10 +43,10 @@ export default function HomeScreen() {
     queryFn: getMe,
   });
 
-  const firstName = agent?.name?.split(" ")[0] ?? "Partner";
-  const totalEarned = agent?.total_earned ?? 0;
-  const pendingAmount = agent?.pending_amount ?? 0;
-  const disbursalsCount = agent?.disbursals_count ?? 0;
+  const firstName = agent?.name?.split(" ")[0] || agent?.phone || "Partner";
+  const totalEarned = parseFloat(agent?.total_earned || "0");
+  const pendingAmount = parseFloat(agent?.pending_amount || "0");
+  const disbursalsCount = agent?.disbursed_count ?? 0;
 
   if (isLoading) {
     return (
@@ -50,6 +55,8 @@ export default function HomeScreen() {
       </View>
     );
   }
+
+  const banners = config.HOME_BANNERS;
 
   return (
     <ScrollView
@@ -70,19 +77,26 @@ export default function HomeScreen() {
     >
       <Animated.View entering={FadeInDown.duration(500)}>
         <View style={styles.greetingRow}>
-          <View>
-            <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.name}>{firstName}</Text>
-          </View>
-          <View style={styles.avatarCircle}>
-            <Feather name="user" size={20} color={Colors.primary} />
+          <View style={styles.greetingLeft}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>
+                {(agent?.name || agent?.phone || "?").charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View>
+              <Text style={styles.greeting}>{firstName}</Text>
+              <View style={styles.onlineRow}>
+                <View style={styles.onlineDot} />
+                <Text style={styles.onlineText}>Online</Text>
+              </View>
+            </View>
           </View>
         </View>
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(100).duration(500)}>
         <View style={styles.earningsCard}>
-          <Text style={styles.earningsLabel}>Total Earned</Text>
+          <Text style={styles.earningsLabel}>Total Paid</Text>
           <View style={styles.earningsRow}>
             <Text style={styles.earningsCurrency}>AED</Text>
             <Text style={styles.earningsAmount}>
@@ -91,22 +105,22 @@ export default function HomeScreen() {
           </View>
           <View style={styles.earningsStats}>
             <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Pending</Text>
               <Text style={styles.statValue}>
                 AED {formatCurrency(pendingAmount)}
               </Text>
-              <Text style={styles.statLabel}>Pending</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{disbursalsCount}</Text>
               <Text style={styles.statLabel}>Disbursals</Text>
+              <Text style={styles.statValue}>{disbursalsCount}</Text>
             </View>
           </View>
         </View>
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(200).duration(500)}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={styles.sectionTitle}>Actions</Text>
         <View style={styles.actionsRow}>
           <Pressable
             onPress={() => router.push("/submit-lead")}
@@ -119,12 +133,17 @@ export default function HomeScreen() {
             <View style={styles.actionIconPrimary}>
               <Feather name="user-plus" size={22} color="#fff" />
             </View>
-            <Text style={styles.actionTitle}>Submit{"\n"}Client</Text>
-            <Feather
-              name="arrow-right"
-              size={18}
-              color="rgba(255,255,255,0.6)"
-            />
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>Submit Client</Text>
+              <Text style={styles.actionSub}>
+                Earn ~AED {config.COMMISSION.AVG_PAYOUT.toLocaleString()}
+              </Text>
+              <View style={styles.commissionBadge}>
+                <Text style={styles.commissionBadgeText}>
+                  {config.COMMISSION.MIN_PERCENT}%–{config.COMMISSION.MAX_PERCENT}%
+                </Text>
+              </View>
+            </View>
           </Pressable>
 
           <Pressable
@@ -146,6 +165,61 @@ export default function HomeScreen() {
           </Pressable>
         </View>
       </Animated.View>
+
+      {!agent?.is_profile_complete && (
+        <Animated.View entering={FadeInDown.delay(300).duration(500)}>
+          <Pressable
+            onPress={() => router.push("/(tabs)/profile")}
+            style={({ pressed }) => [
+              styles.profileNudge,
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <View style={styles.profileNudgeContent}>
+              <Text style={styles.profileNudgeTitle}>Complete your profile</Text>
+              <Text style={styles.profileNudgeDesc}>
+                Add your name, type, and email.
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={20} color={Colors.textMuted} />
+          </Pressable>
+        </Animated.View>
+      )}
+
+      {banners.length > 0 && (
+        <Animated.View entering={FadeInDown.delay(400).duration(500)}>
+          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Updates</Text>
+          {banners.map((banner: HomeBanner) => (
+            <Pressable
+              key={banner.id}
+              onPress={() => {
+                if (banner.cta_link) {
+                  if (banner.cta_link.startsWith("/")) {
+                    router.push(banner.cta_link as never);
+                  } else {
+                    Linking.openURL(banner.cta_link);
+                  }
+                }
+              }}
+              style={({ pressed }) => [
+                styles.bannerCard,
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              <Text style={styles.bannerTitle}>{banner.title}</Text>
+              {banner.subtitle ? (
+                <Text style={styles.bannerSubtitle}>{banner.subtitle}</Text>
+              ) : null}
+              {banner.cta_text ? (
+                <View style={styles.bannerCtaRow}>
+                  <Text style={styles.bannerCtaText}>{banner.cta_text}</Text>
+                  <Feather name="chevron-right" size={16} color={Colors.primary} />
+                </View>
+              ) : null}
+            </Pressable>
+          ))}
+        </Animated.View>
+      )}
     </ScrollView>
   );
 }
@@ -165,26 +239,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 28,
   },
-  greeting: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 16,
-    color: Colors.textSecondary,
-  },
-  name: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 28,
-    color: Colors.text,
-    marginTop: 2,
+  greetingLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
   },
   avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.primary + "15",
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.surface,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: Colors.primary + "30",
+    borderColor: Colors.border,
+  },
+  avatarText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 18,
+    color: Colors.text,
+  },
+  greeting: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 20,
+    color: Colors.text,
+  },
+  onlineRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 2,
+  },
+  onlineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.primary,
+  },
+  onlineText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: Colors.textMuted,
   },
   earningsCard: {
     backgroundColor: Colors.surface,
@@ -235,8 +330,10 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    color: Colors.textSecondary,
+    fontSize: 12,
+    color: Colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   statDivider: {
     width: 1,
@@ -264,8 +361,8 @@ const styles = StyleSheet.create({
     minHeight: 140,
   },
   actionCardPrimary: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.surface,
+    borderColor: Colors.border,
   },
   actionPressed: {
     opacity: 0.85,
@@ -275,7 +372,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -287,16 +384,93 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  actionContent: {
+    marginTop: 12,
+    gap: 4,
+  },
   actionTitle: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 16,
-    color: "#fff",
-    marginTop: 12,
+    color: Colors.text,
+  },
+  actionSub: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  commissionBadge: {
+    alignSelf: "flex-start",
+    marginTop: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary + "50",
+    backgroundColor: Colors.background,
+  },
+  commissionBadgeText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    color: Colors.primary,
   },
   actionTitleDark: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 16,
     color: Colors.text,
     marginTop: 12,
+  },
+  profileNudge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginTop: 20,
+  },
+  profileNudgeContent: {
+    flex: 1,
+  },
+  profileNudgeTitle: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  profileNudgeDesc: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
+  bannerCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 10,
+  },
+  bannerTitle: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 15,
+    color: Colors.text,
+  },
+  bannerSubtitle: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 4,
+  },
+  bannerCtaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 10,
+  },
+  bannerCtaText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    color: Colors.primary,
   },
 });
