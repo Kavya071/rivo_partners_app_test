@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,10 +8,9 @@ import {
   Pressable,
   Platform,
   ActivityIndicator,
-  Alert,
+  Switch,
 } from "react-native";
-import { Feather, Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -20,21 +19,18 @@ import Colors from "@/constants/colors";
 import { getMe, updateProfile, logout, deleteAccount } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
-const TAB_BAR_HEIGHT = 84;
-
-const DEFAULT_AGENT_TYPES = [
-  "Independent Agent",
-  "Agency Agent",
-  "Broker",
-  "Developer Sales",
-  "Other",
+const AGENT_TYPE_OPTIONS = [
+  { value: "RE_BROKER", label: "Real Estate Broker" },
+  { value: "MORTGAGE_BROKER", label: "Mortgage Broker" },
+  { value: "OTHER", label: "Other" },
 ];
 
-const RERA_AGENT_TYPES = ["Agency Agent", "Broker"];
+function getAgentTypeLabel(value: string): string {
+  const found = AGENT_TYPE_OPTIONS.find((o) => o.value === value);
+  return found ? found.label : value || "Select type";
+}
 
 export default function ProfileScreen() {
-  const insets = useSafeAreaInsets();
-  const webTopPad = Platform.OS === "web" ? 67 : 0;
   const { signOut } = useAuth();
   const queryClient = useQueryClient();
 
@@ -51,13 +47,8 @@ export default function ProfileScreen() {
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-
-  const agentTypeOptions = useMemo(() => {
-    if (agent?.agent_type_options && Array.isArray(agent.agent_type_options) && agent.agent_type_options.length > 0) {
-      return agent.agent_type_options;
-    }
-    return DEFAULT_AGENT_TYPES;
-  }, [agent]);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (agent) {
@@ -66,14 +57,13 @@ export default function ProfileScreen() {
       setAgentType(agent.agent_type ?? "");
       setAgentTypeOther(agent.agent_type_other ?? "");
       setReraNumber(agent.rera_number ?? "");
-      if (!agent.is_profile_complete) {
-        setIsEditing(true);
-      }
+      setIsEditing(!agent.is_profile_complete);
     }
   }, [agent]);
 
-  const showReraField = RERA_AGENT_TYPES.includes(agentType);
-  const showOtherField = agentType === "Other";
+  const showReraField = agentType === "RE_BROKER";
+  const showOtherField = agentType === "OTHER";
+  const showConnectAccounts = isEditing && !email;
 
   const handleSave = async () => {
     setSaving(true);
@@ -82,67 +72,40 @@ export default function ProfileScreen() {
         name,
         email,
         agent_type: agentType,
+        agent_type_other: showOtherField ? agentTypeOther : "",
+        rera_number: showReraField ? reraNumber : "",
       };
-      if (showOtherField) {
-        payload.agent_type_other = agentTypeOther;
-      }
-      if (showReraField) {
-        payload.rera_number = reraNumber;
-      }
       await updateProfile(payload);
       queryClient.invalidateQueries({ queryKey: ["agent-me"] });
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       setIsEditing(false);
-      Alert.alert("Saved", "Profile updated successfully");
     } catch (_e) {
-      Alert.alert("Error", "Failed to update profile");
+      // silent
     } finally {
       setSaving(false);
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await logout();
-          } catch (_e) {
-            // ignore
-          }
-          await signOut();
-          router.replace("/");
-        },
-      },
-    ]);
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (_e) {
+      // ignore
+    }
+    await signOut();
+    router.replace("/");
   };
 
-  const handleDelete = () => {
-    Alert.alert(
-      "Delete Account",
-      "This action cannot be undone. All your data will be permanently deleted.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteAccount();
-            } catch (_e) {
-              // ignore
-            }
-            await signOut();
-            router.replace("/");
-          },
-        },
-      ],
-    );
+  const handleDelete = async () => {
+    try {
+      await deleteAccount();
+    } catch (_e) {
+      // ignore
+    }
+    await signOut();
+    router.replace("/");
   };
 
   if (isLoading) {
@@ -154,38 +117,42 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{
-        paddingTop: insets.top + webTopPad + 20,
-        paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 40,
-        paddingHorizontal: 20,
-      }}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.titleRow}>
-        <Text style={styles.pageTitle}>Profile</Text>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Profile</Text>
         {!isEditing && (
-          <Pressable onPress={() => setIsEditing(true)} style={styles.editBtn}>
-            <Feather name="edit-2" size={16} color={Colors.primary} />
-            <Text style={styles.editBtnText}>Edit</Text>
+          <Pressable onPress={() => setIsEditing(true)}>
+            <Text style={styles.editLink}>Edit</Text>
           </Pressable>
         )}
       </View>
 
-      <View style={styles.profileHeader}>
-        <View style={styles.avatarLarge}>
-          <Feather name="user" size={32} color={Colors.primary} />
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.avatarRow}>
+          <View style={styles.avatar}>
+            <Ionicons name="person-outline" size={40} color="#A1A1AA" />
+          </View>
+          <View style={styles.avatarInfo}>
+            <Text style={styles.profileName}>
+              {agent?.name || "Partner"}
+            </Text>
+            <Text style={styles.profilePhone}>{agent?.phone || ""}</Text>
+            <View style={styles.verifiedBadge}>
+              <Ionicons
+                name="checkmark-circle"
+                size={14}
+                color={Colors.primary}
+              />
+              <Text style={styles.verifiedText}>Verified Partner</Text>
+            </View>
+          </View>
         </View>
-        <Text style={styles.profileName}>{agent?.name || "Partner"}</Text>
-        <Text style={styles.profilePhone}>{agent?.phone || ""}</Text>
-        <View style={styles.verifiedBadge}>
-          <Ionicons name="checkmark-circle" size={16} color={Colors.primary} />
-          <Text style={styles.verifiedText}>Verified Partner</Text>
-        </View>
-      </View>
 
-      <View style={styles.formSection}>
+        <Text style={styles.sectionTitle}>Personal Details</Text>
+
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>Full Name</Text>
           <TextInput
@@ -202,7 +169,10 @@ export default function ProfileScreen() {
           <Text style={styles.fieldLabel}>Agent Type</Text>
           <Pressable
             onPress={() => isEditing && setShowTypePicker(!showTypePicker)}
-            style={[styles.selectInput, !isEditing && styles.textInputDisabled]}
+            style={[
+              styles.selectInput,
+              !isEditing && styles.textInputDisabled,
+            ]}
           >
             <Text
               style={[
@@ -210,10 +180,10 @@ export default function ProfileScreen() {
                 !agentType && { color: Colors.textMuted },
               ]}
             >
-              {agentType || "Select type"}
+              {getAgentTypeLabel(agentType)}
             </Text>
             {isEditing && (
-              <Feather
+              <Ionicons
                 name={showTypePicker ? "chevron-up" : "chevron-down"}
                 size={18}
                 color={Colors.textMuted}
@@ -222,29 +192,33 @@ export default function ProfileScreen() {
           </Pressable>
           {showTypePicker && isEditing && (
             <View style={styles.pickerDropdown}>
-              {agentTypeOptions.map((type) => (
+              {AGENT_TYPE_OPTIONS.map((opt) => (
                 <Pressable
-                  key={type}
+                  key={opt.value}
                   onPress={() => {
-                    setAgentType(type);
+                    setAgentType(opt.value);
                     setShowTypePicker(false);
                   }}
                   style={({ pressed }) => [
                     styles.pickerItem,
-                    agentType === type && styles.pickerItemSelected,
+                    agentType === opt.value && styles.pickerItemSelected,
                     pressed && { opacity: 0.7 },
                   ]}
                 >
                   <Text
                     style={[
                       styles.pickerItemText,
-                      agentType === type && styles.pickerItemTextSelected,
+                      agentType === opt.value && styles.pickerItemTextSelected,
                     ]}
                   >
-                    {type}
+                    {opt.label}
                   </Text>
-                  {agentType === type && (
-                    <Feather name="check" size={16} color={Colors.primary} />
+                  {agentType === opt.value && (
+                    <Ionicons
+                      name="checkmark"
+                      size={16}
+                      color={Colors.primary}
+                    />
                   )}
                 </Pressable>
               ))}
@@ -252,25 +226,14 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {showOtherField && (
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Specify Agent Type</Text>
-            <TextInput
-              style={[styles.textInput, !isEditing && styles.textInputDisabled]}
-              value={agentTypeOther}
-              onChangeText={setAgentTypeOther}
-              placeholderTextColor={Colors.textMuted}
-              placeholder="e.g. Mortgage Advisor"
-              editable={isEditing}
-            />
-          </View>
-        )}
-
         {showReraField && (
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>RERA Number</Text>
             <TextInput
-              style={[styles.textInput, !isEditing && styles.textInputDisabled]}
+              style={[
+                styles.textInput,
+                !isEditing && styles.textInputDisabled,
+              ]}
               value={reraNumber}
               onChangeText={setReraNumber}
               placeholderTextColor={Colors.textMuted}
@@ -280,17 +243,70 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Email</Text>
-          <TextInput
-            style={[styles.textInput, !isEditing && styles.textInputDisabled]}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="your@email.com"
-            placeholderTextColor={Colors.textMuted}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            editable={isEditing}
+        {showOtherField && (
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>What do you do?</Text>
+            <TextInput
+              style={[
+                styles.textInput,
+                !isEditing && styles.textInputDisabled,
+              ]}
+              value={agentTypeOther}
+              onChangeText={setAgentTypeOther}
+              placeholderTextColor={Colors.textMuted}
+              placeholder="Describe what you do"
+              editable={isEditing}
+            />
+          </View>
+        )}
+
+        {showConnectAccounts && (
+          <>
+            <Text style={styles.sectionTitle}>Connect Accounts</Text>
+            <View style={styles.connectRow}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.connectBtn,
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Ionicons name="logo-google" size={20} color="#fff" />
+                <Text style={styles.connectBtnText}>Google</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.connectBtn,
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Ionicons name="mail-outline" size={20} color="#fff" />
+                <Text style={styles.connectBtnText}>Outlook</Text>
+              </Pressable>
+            </View>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Email</Text>
+              <TextInput
+                style={[styles.textInput]}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="your@email.com"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={true}
+              />
+            </View>
+          </>
+        )}
+
+        <Text style={styles.sectionTitle}>Notifications</Text>
+        <View style={styles.notificationRow}>
+          <Text style={styles.notificationLabel}>Push Notifications</Text>
+          <Switch
+            value={pushEnabled}
+            onValueChange={setPushEnabled}
+            trackColor={{ false: "#3F3F46", true: "#00D084" }}
+            thumbColor="#FFFFFF"
           />
         </View>
 
@@ -301,45 +317,70 @@ export default function ProfileScreen() {
             style={({ pressed }) => [
               styles.saveBtn,
               saving && styles.saveBtnDisabled,
-              pressed && !saving && styles.btnPressed,
+              pressed && !saving && { opacity: 0.85 },
             ]}
           >
             {saving ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color="#000" size="small" />
             ) : (
-              <Text style={styles.saveBtnText}>Save Changes</Text>
+              <Text style={styles.saveBtnText}>Save Profile</Text>
             )}
           </Pressable>
         )}
-      </View>
 
-      <View style={styles.dangerSection}>
-        <Pressable
-          onPress={handleLogout}
-          style={({ pressed }) => [
-            styles.dangerBtn,
-            pressed && { opacity: 0.7 },
-          ]}
-        >
-          <Feather name="log-out" size={18} color={Colors.textSecondary} />
-          <Text style={styles.dangerBtnText}>Sign Out</Text>
-        </Pressable>
+        <View style={styles.footerSection}>
+          <Pressable
+            onPress={handleLogout}
+            style={({ pressed }) => [
+              styles.signOutBtn,
+              pressed && { opacity: 0.7 },
+            ]}
+          >
+            <Ionicons name="log-out-outline" size={20} color={Colors.danger} />
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </Pressable>
 
-        <Pressable
-          onPress={handleDelete}
-          style={({ pressed }) => [
-            styles.dangerBtn,
-            styles.deleteBtnStyle,
-            pressed && { opacity: 0.7 },
-          ]}
-        >
-          <Feather name="trash-2" size={18} color={Colors.danger} />
-          <Text style={[styles.dangerBtnText, { color: Colors.danger }]}>
-            Delete Account
-          </Text>
-        </Pressable>
-      </View>
-    </ScrollView>
+          {!showDeleteConfirm ? (
+            <Pressable
+              onPress={() => setShowDeleteConfirm(true)}
+              style={({ pressed }) => [
+                styles.deleteBtn,
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <Ionicons name="trash-outline" size={20} color={Colors.danger} />
+              <Text style={styles.deleteBtnText}>Delete Account</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.deleteConfirm}>
+              <Text style={styles.deleteConfirmText}>
+                Are you sure? This cannot be undone.
+              </Text>
+              <View style={styles.deleteConfirmActions}>
+                <Pressable
+                  onPress={() => setShowDeleteConfirm(false)}
+                  style={({ pressed }) => [
+                    styles.deleteConfirmCancel,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <Text style={styles.deleteConfirmCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleDelete}
+                  style={({ pressed }) => [
+                    styles.deleteConfirmDelete,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <Text style={styles.deleteConfirmDeleteText}>Delete</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -352,93 +393,93 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  titleRow: {
+  header: {
+    backgroundColor: "#000000",
+    paddingHorizontal: 24,
+    paddingTop: 48,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: "#27272A",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
   },
-  pageTitle: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 28,
+  headerTitle: {
+    fontSize: 30,
+    fontWeight: "500",
     color: Colors.text,
   },
-  editBtn: {
+  editLink: {
+    fontSize: 16,
+    color: "#00D084",
+    fontWeight: "500",
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 96,
+  },
+  avatarRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: Colors.primary + "15",
-    borderRadius: 8,
-  },
-  editBtnText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 13,
-    color: Colors.primary,
-  },
-  profileHeader: {
-    alignItems: "center",
     marginBottom: 32,
-    gap: 8,
+    gap: 16,
   },
-  avatarLarge: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.primary + "15",
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#18181B",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: Colors.primary + "30",
-    marginBottom: 4,
+  },
+  avatarInfo: {
+    flex: 1,
+    gap: 4,
   },
   profileName: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 22,
+    fontSize: 20,
+    fontWeight: "700",
     color: Colors.text,
   },
   profilePhone: {
-    fontFamily: "Inter_400Regular",
     fontSize: 14,
     color: Colors.textSecondary,
   },
   verifiedBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: Colors.primary + "15",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    gap: 4,
     marginTop: 4,
   },
   verifiedText: {
-    fontFamily: "Inter_500Medium",
     fontSize: 13,
     color: Colors.primary,
+    fontWeight: "500",
   },
-  formSection: {
-    gap: 18,
-    marginBottom: 32,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.text,
+    marginBottom: 16,
+    marginTop: 8,
   },
   fieldGroup: {
-    gap: 6,
+    marginBottom: 16,
   },
   fieldLabel: {
-    fontFamily: "Inter_500Medium",
     fontSize: 13,
     color: Colors.textSecondary,
-    marginLeft: 2,
+    marginBottom: 6,
+    fontWeight: "500",
   },
   textInput: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
+    backgroundColor: "#18181B",
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "#27272A",
     paddingHorizontal: 16,
-    height: 48,
-    fontFamily: "Inter_400Regular",
+    height: 56,
     fontSize: 15,
     color: Colors.text,
   },
@@ -446,26 +487,25 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   selectInput: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
+    backgroundColor: "#18181B",
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "#27272A",
     paddingHorizontal: 16,
-    height: 48,
+    height: 56,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   selectText: {
-    fontFamily: "Inter_400Regular",
     fontSize: 15,
     color: Colors.text,
   },
   pickerDropdown: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
+    backgroundColor: "#18181B",
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "#27272A",
     overflow: "hidden",
     marginTop: 4,
   },
@@ -476,61 +516,152 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
+    borderBottomColor: "#27272A",
   },
   pickerItemSelected: {
     backgroundColor: Colors.primary + "10",
   },
   pickerItemText: {
-    fontFamily: "Inter_400Regular",
     fontSize: 15,
     color: Colors.text,
   },
   pickerItemTextSelected: {
-    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
     color: Colors.primary,
   },
+  connectRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 16,
+  },
+  connectBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#18181B",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#27272A",
+    height: 48,
+  },
+  connectBtnText: {
+    fontSize: 15,
+    color: Colors.text,
+    fontWeight: "500",
+  },
+  notificationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#18181B",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#27272A",
+    paddingHorizontal: 16,
+    height: 56,
+    marginBottom: 24,
+  },
+  notificationLabel: {
+    fontSize: 15,
+    color: Colors.text,
+  },
   saveBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
     height: 48,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 4,
+    marginBottom: 24,
   },
   saveBtnDisabled: {
     opacity: 0.5,
   },
   saveBtnText: {
-    fontFamily: "Inter_600SemiBold",
     fontSize: 16,
-    color: "#fff",
+    fontWeight: "600",
+    color: "#000000",
   },
-  btnPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
-  },
-  dangerSection: {
+  footerSection: {
     gap: 8,
+    marginTop: 8,
   },
-  dangerBtn: {
+  signOutBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
+    backgroundColor: "#18181B",
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "#27272A",
     paddingHorizontal: 16,
     height: 48,
   },
-  deleteBtnStyle: {
-    borderColor: Colors.danger + "30",
-    backgroundColor: Colors.danger + "08",
-  },
-  dangerBtnText: {
-    fontFamily: "Inter_500Medium",
+  signOutText: {
     fontSize: 15,
-    color: Colors.textSecondary,
+    color: Colors.danger,
+    fontWeight: "500",
+  },
+  deleteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#18181B",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#27272A",
+    paddingHorizontal: 16,
+    height: 48,
+  },
+  deleteBtnText: {
+    fontSize: 15,
+    color: Colors.danger,
+    fontWeight: "500",
+  },
+  deleteConfirm: {
+    backgroundColor: Colors.danger + "15",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.danger + "40",
+    padding: 16,
+    gap: 12,
+  },
+  deleteConfirmText: {
+    fontSize: 14,
+    color: Colors.danger,
+    fontWeight: "500",
+  },
+  deleteConfirmActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  deleteConfirmCancel: {
+    flex: 1,
+    backgroundColor: "#18181B",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#27272A",
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteConfirmCancelText: {
+    fontSize: 14,
+    color: Colors.text,
+    fontWeight: "500",
+  },
+  deleteConfirmDelete: {
+    flex: 1,
+    backgroundColor: Colors.danger,
+    borderRadius: 8,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteConfirmDeleteText: {
+    fontSize: 14,
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
 });
