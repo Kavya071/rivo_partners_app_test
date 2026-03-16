@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -25,9 +25,6 @@ function getStatusColor(status: ClientStatus): string {
       return Colors.success;
     case "DECLINED":
       return Colors.danger;
-    case "PREAPPROVED":
-    case "FOL_RECEIVED":
-      return Colors.warning;
     default:
       return Colors.textSecondary;
   }
@@ -107,6 +104,12 @@ export default function ClientsScreen() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const handleSearch = useCallback((text: string) => {
     setSearch(text);
