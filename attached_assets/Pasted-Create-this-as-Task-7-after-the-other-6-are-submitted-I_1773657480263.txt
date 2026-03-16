@@ -1,0 +1,34 @@
+Create this as Task 7 after the other 6 are submitted:
+IMPORTANT: This task runs AFTER all other screen tasks are complete. Do NOT start until all other tasks are done.
+
+Check EVERY screen in the mobile app for responsiveness across these viewport sizes:
+- Small phone: 320px width (iPhone SE / older Android)
+- Standard phone: 375px width (iPhone 13/14/15)
+- Large phone: 428px width (iPhone Pro Max / Samsung Ultra)
+- Tablet: 768px width (iPad Mini)
+
+For EACH of the following screens, take a screenshot at each viewport size and fix any issues:
+
+1. LandingScreen — heading text overflow? buttons cut off? value props stacked properly?
+2. WhatsAppListeningScreen — circle centered? text readable? button reachable?
+3. ReferralBonusScreen — timeline fits? total potential visible? buttons not cut off on short screens?
+4. HomeScreen — earnings card fits? action cards side by side on wide, stacked on narrow? banners readable?
+5. ClientsScreen — search bar full width? client cards don't overflow? status badges fit?
+6. LeadSubmissionScreen — country picker + phone input fit in one row? commission card readable? form scrollable when keyboard opens?
+7. NetworkScreen — referral code text fits? buttons full width? referred agents list scrollable?
+8. ProfileScreen — all fields visible? dropdown works? buttons don't overlap? scrollable when keyboard opens?
+9. ReferralSuccessScreen — checkmark centered? cards fit? Done button reachable?
+10. ReferralInfoScreen — 3 cards stack properly? bonus table readable? fixed bottom button doesn't overlap content?
+11. TermsScreen — text readable? scrollable? back button accessible?
+12. PrivacyScreen — same as Terms
+13. BonusTermsScreen — same as Terms
+
+Fix these common responsive issues if found:
+- Text overflowing containers — add flexShrink 1 or numberOfLines
+- Content hidden behind bottom tab bar — add paddingBottom 96
+- Content hidden behind keyboard — wrap forms in KeyboardAvoidingView
+- Horizontal overflow — ensure all rows use flexWrap or have proper flex values
+- Landing page not scrollable on short screens — wrap in ScrollView
+- Fixed bottom buttons overlapping content — add enough bottom padding to scroll content
+
+Every screen must be fully usable on a small 320px phone with no cut-off content, no overlapping elements, and no unreachable buttons. Test in Expo Go on a real device, not just web preview.
