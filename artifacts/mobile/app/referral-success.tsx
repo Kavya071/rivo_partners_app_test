@@ -7,7 +7,7 @@ import {
   Platform,
 } from "react-native";
 import { router } from "expo-router";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
@@ -15,34 +15,23 @@ import Animated, {
   withSpring,
   withDelay,
   FadeIn,
-  withSequence,
-  withTiming,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
 import Colors from "@/constants/colors";
-import { useConfig } from "@/context/ConfigContext";
-import {
-  getWhatsAppPref,
-  openWhatsAppChat,
-} from "@/lib/whatsapp";
 
 export default function ReferralSuccessScreen() {
   const insets = useSafeAreaInsets();
   const webBottomPad = Platform.OS === "web" ? 34 : 0;
-  const config = useConfig();
 
-  const checkScale = useSharedValue(0);
-  const circleScale = useSharedValue(0);
+  const circleScale = useSharedValue(0.5);
+  const circleOpacity = useSharedValue(0);
 
   useEffect(() => {
     circleScale.value = withSpring(1, { damping: 12, stiffness: 100 });
-    checkScale.value = withDelay(
-      300,
-      withSequence(
-        withSpring(1.2, { damping: 8, stiffness: 150 }),
-        withTiming(1, { duration: 200 }),
-      ),
+    circleOpacity.value = withDelay(
+      0,
+      withSpring(1, { damping: 12, stiffness: 100 }),
     );
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -51,25 +40,8 @@ export default function ReferralSuccessScreen() {
 
   const circleStyle = useAnimatedStyle(() => ({
     transform: [{ scale: circleScale.value }],
+    opacity: circleOpacity.value,
   }));
-
-  const checkStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: checkScale.value }],
-  }));
-
-  const handleContactWhatsApp = async () => {
-    const pref = await getWhatsAppPref();
-    const waUrl =
-      pref === "business"
-        ? config.LINKS.WHATSAPP_BUSINESS
-        : config.LINKS.WHATSAPP_PERSONAL;
-    const phone = waUrl.replace("https://wa.me/", "");
-    await openWhatsAppChat(
-      phone,
-      "Hi, I just submitted a new client referral.",
-      pref || undefined,
-    );
-  };
 
   return (
     <View
@@ -80,9 +52,7 @@ export default function ReferralSuccessScreen() {
     >
       <View style={styles.centerContent}>
         <Animated.View style={[styles.successCircle, circleStyle]}>
-          <Animated.View style={checkStyle}>
-            <Feather name="check" size={48} color="#fff" />
-          </Animated.View>
+          <Ionicons name="checkmark" size={40} color="#fff" />
         </Animated.View>
 
         <Animated.View entering={FadeIn.delay(500).duration(400)}>
@@ -95,20 +65,31 @@ export default function ReferralSuccessScreen() {
             stage.
           </Text>
         </Animated.View>
+
+        <Animated.View entering={FadeIn.delay(900).duration(400)} style={styles.cardsSection}>
+          <View style={styles.infoCard}>
+            <Ionicons name="chatbubble" size={24} color={Colors.primary} />
+            <View style={styles.infoCardText}>
+              <Text style={styles.infoCardTitle}>WhatsApp Updates</Text>
+              <Text style={styles.infoCardDesc}>
+                You'll receive status updates on WhatsApp as the deal progresses.
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Ionicons name="briefcase" size={24} color={Colors.primary} />
+            <View style={styles.infoCardText}>
+              <Text style={styles.infoCardTitle}>Track in App</Text>
+              <Text style={styles.infoCardDesc}>
+                View all your clients and their deal status in the Clients tab.
+              </Text>
+            </View>
+          </View>
+        </Animated.View>
       </View>
 
-      <Animated.View entering={FadeIn.delay(900).duration(400)} style={styles.bottomActions}>
-        <Pressable
-          onPress={handleContactWhatsApp}
-          style={({ pressed }) => [
-            styles.whatsappBtn,
-            pressed && styles.btnPressed,
-          ]}
-        >
-          <Ionicons name="logo-whatsapp" size={20} color="#fff" />
-          <Text style={styles.whatsappBtnText}>Chat on WhatsApp</Text>
-        </Pressable>
-
+      <Animated.View entering={FadeIn.delay(1100).duration(400)}>
         <Pressable
           onPress={() => router.replace("/(tabs)")}
           style={({ pressed }) => [
@@ -159,35 +140,42 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     paddingHorizontal: 20,
   },
-  bottomActions: {
+  cardsSection: {
+    width: "100%",
     gap: 12,
+    marginTop: 12,
   },
-  whatsappBtn: {
-    backgroundColor: Colors.whatsapp,
-    borderRadius: 14,
-    height: 52,
+  infoCard: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  whatsappBtnText: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 16,
-    color: "#fff",
-  },
-  btnPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
-  },
-  doneBtn: {
-    borderRadius: 14,
-    height: 52,
-    justifyContent: "center",
-    alignItems: "center",
+    alignItems: "flex-start",
+    gap: 14,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 16,
+  },
+  infoCardText: {
+    flex: 1,
+    gap: 4,
+  },
+  infoCardTitle: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 15,
+    color: Colors.text,
+  },
+  infoCardDesc: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+  },
+  doneBtn: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    height: 52,
+    justifyContent: "center",
+    alignItems: "center",
   },
   doneBtnPressed: {
     opacity: 0.85,
@@ -196,6 +184,6 @@ const styles = StyleSheet.create({
   doneBtnText: {
     fontFamily: "Inter_700Bold",
     fontSize: 16,
-    color: Colors.text,
+    color: "#000",
   },
 });

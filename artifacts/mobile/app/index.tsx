@@ -9,14 +9,17 @@ import {
   ScrollView,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   FadeInDown,
   FadeInUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  Easing,
 } from "react-native-reanimated";
-import * as Linking from "expo-linking";
 
 import Colors from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
@@ -35,24 +38,28 @@ import WhatsAppPickerSheet from "@/components/WhatsAppPickerSheet";
 interface ValueProp {
   title: string;
   desc: string;
-  renderIcon: () => React.ReactNode;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconSize: number;
 }
 
 const VALUE_PROPS: ValueProp[] = [
   {
     title: "Fast Referrals",
     desc: "Submit clients in seconds",
-    renderIcon: () => <Ionicons name="flash" size={20} color={Colors.primary} />,
+    icon: "flash",
+    iconSize: 20,
   },
   {
     title: "Real-Time Tracking",
     desc: "Monitor every deal stage",
-    renderIcon: () => <MaterialCommunityIcons name="chart-timeline-variant" size={20} color={Colors.primary} />,
+    icon: "trending-up",
+    iconSize: 20,
   },
   {
     title: "Network Bonus",
     desc: "Earn from your referrals",
-    renderIcon: () => <Ionicons name="people" size={20} color={Colors.primary} />,
+    icon: "people",
+    iconSize: 20,
   },
 ];
 
@@ -71,6 +78,27 @@ export default function LandingScreen() {
   const [showPicker, setShowPicker] = useState(false);
   const [referralName, setReferralName] = useState<string | null>(null);
   const [pendingSignIn, setPendingSignIn] = useState(false);
+
+  const pulseDotScale = useSharedValue(1);
+  const pulseDotOpacity = useSharedValue(1);
+
+  useEffect(() => {
+    pulseDotScale.value = withRepeat(
+      withTiming(2, { duration: 1200, easing: Easing.out(Easing.ease) }),
+      -1,
+      false,
+    );
+    pulseDotOpacity.value = withRepeat(
+      withTiming(0, { duration: 1200, easing: Easing.out(Easing.ease) }),
+      -1,
+      false,
+    );
+  }, []);
+
+  const pulseDotStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseDotScale.value }],
+    opacity: pulseDotOpacity.value,
+  }));
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
@@ -171,18 +199,18 @@ export default function LandingScreen() {
     >
       <Animated.View entering={FadeInUp.delay(100).duration(600)} style={styles.header}>
         <View style={styles.logoRow}>
-          <LinearGradient
-            colors={[Colors.primary, Colors.primaryDark]}
-            style={styles.logoBg}
-          >
-            <Ionicons name="diamond" size={22} color="#fff" />
-          </LinearGradient>
+          <View style={styles.logoBg}>
+            <Text style={styles.logoLetter}>R</Text>
+          </View>
           <Text style={styles.logoText}>Rivo Partners</Text>
         </View>
 
         {referralName && (
           <View style={styles.referralBadge}>
-            <View style={styles.referralDot} />
+            <View style={styles.referralDotContainer}>
+              <Animated.View style={[styles.referralDotPulse, pulseDotStyle]} />
+              <View style={styles.referralDot} />
+            </View>
             <View>
               <Text style={styles.referralLabel}>Referred by</Text>
               <Text style={styles.referralNameText}>{referralName}</Text>
@@ -193,7 +221,8 @@ export default function LandingScreen() {
 
       <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.heroSection}>
         <Text style={styles.heroTitle}>
-          Earn on every{"\n"}mortgage you refer
+          Earn on every{"\n"}
+          <Text style={styles.heroTitleGreen}>mortgage you refer.</Text>
         </Text>
         <Text style={styles.heroSubtitle}>
           Dubai's premier mortgage referral platform for real estate agents
@@ -201,26 +230,25 @@ export default function LandingScreen() {
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(400).duration(600)} style={styles.payoutCard}>
-        <LinearGradient
-          colors={["#0a2e1a", "#0d1f14"]}
-          style={styles.payoutGradient}
-        >
-          <Text style={styles.payoutLabel}>Average Payout</Text>
-          <View style={styles.payoutRow}>
-            <Text style={styles.payoutCurrency}>AED</Text>
-            <Text style={styles.payoutAmount}>
-              {config.COMMISSION.AVG_PAYOUT.toLocaleString()}
-            </Text>
-          </View>
-          <Text style={styles.payoutSub}>per successful referral</Text>
-        </LinearGradient>
+        <Text style={styles.payoutLabel}>Average Payout</Text>
+        <View style={styles.payoutRow}>
+          <Text style={styles.payoutCurrency}>AED</Text>
+          <Text style={styles.payoutAmount}>
+            {config.COMMISSION.AVG_PAYOUT.toLocaleString()}
+          </Text>
+        </View>
+        <View style={styles.rateBadge}>
+          <Text style={styles.rateBadgeText}>
+            {config.COMMISSION.MIN_PERCENT}% commission rate
+          </Text>
+        </View>
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(500).duration(600)} style={styles.valueProps}>
         {VALUE_PROPS.map((prop, i) => (
           <View key={i} style={styles.valuePropCard}>
             <View style={styles.valuePropIcon}>
-              {prop.renderIcon()}
+              <Ionicons name={prop.icon} size={prop.iconSize} color={Colors.primary} />
             </View>
             <View style={styles.valuePropText}>
               <Text style={styles.valuePropTitle}>{prop.title}</Text>
@@ -232,20 +260,12 @@ export default function LandingScreen() {
 
       <View style={styles.bottomSection}>
         <View style={styles.termsRow}>
-          <Pressable
-            onPress={() => setTermsAccepted(!termsAccepted)}
-            style={styles.checkboxHit}
-          >
-            <View
-              style={[
-                styles.checkbox,
-                termsAccepted && styles.checkboxChecked,
-              ]}
-            >
-              {termsAccepted && (
-                <Feather name="check" size={14} color="#fff" />
-              )}
-            </View>
+          <Pressable onPress={() => setTermsAccepted(!termsAccepted)}>
+            <Ionicons
+              name={termsAccepted ? "checkbox" : "square-outline"}
+              size={24}
+              color={termsAccepted ? Colors.primary : Colors.borderLight}
+            />
           </Pressable>
           <Text style={styles.termsText}>
             <Text onPress={() => setTermsAccepted(!termsAccepted)}>
@@ -270,10 +290,10 @@ export default function LandingScreen() {
           ]}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color="#000" size="small" />
           ) : (
             <>
-              <Ionicons name="logo-whatsapp" size={22} color="#fff" />
+              <Ionicons name="logo-whatsapp" size={22} color="#25D366" />
               <Text style={styles.ctaText}>Get Started</Text>
             </>
           )}
@@ -323,9 +343,15 @@ const styles = StyleSheet.create({
   logoBg: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
+  },
+  logoLetter: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 22,
+    color: "#fff",
   },
   logoText: {
     fontFamily: "Inter_700Bold",
@@ -342,6 +368,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 10,
+  },
+  referralDotContainer: {
+    width: 10,
+    height: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  referralDotPulse: {
+    position: "absolute",
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.primary,
   },
   referralDot: {
     width: 8,
@@ -370,6 +409,9 @@ const styles = StyleSheet.create({
     color: Colors.text,
     lineHeight: 44,
   },
+  heroTitleGreen: {
+    color: Colors.primary,
+  },
   heroSubtitle: {
     fontFamily: "Inter_400Regular",
     fontSize: 16,
@@ -381,8 +423,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderColor: Colors.primary + "30",
-  },
-  payoutGradient: {
+    backgroundColor: "#0a2e1a",
     padding: 24,
     alignItems: "center",
     gap: 4,
@@ -409,10 +450,17 @@ const styles = StyleSheet.create({
     fontSize: 48,
     color: Colors.primary,
   },
-  payoutSub: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    color: Colors.textSecondary,
+  rateBadge: {
+    backgroundColor: Colors.primary + "20",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginTop: 4,
+  },
+  rateBadgeText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    color: Colors.primary,
   },
   valueProps: {
     gap: 12,
@@ -457,22 +505,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  checkboxHit: {
-    padding: 4,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: Colors.borderLight,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkboxChecked: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
   termsText: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
@@ -483,7 +515,7 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
   ctaButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: "#FFFFFF",
     borderRadius: 14,
     height: 56,
     flexDirection: "row",
@@ -492,7 +524,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   ctaDisabled: {
-    opacity: 0.4,
+    opacity: 0.5,
   },
   ctaPressed: {
     opacity: 0.85,
@@ -501,7 +533,7 @@ const styles = StyleSheet.create({
   ctaText: {
     fontFamily: "Inter_700Bold",
     fontSize: 17,
-    color: "#fff",
+    color: "#000",
   },
   signInRow: {
     alignItems: "center",

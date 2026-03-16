@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from "react-native";
 import { router } from "expo-router";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useQuery } from "@tanstack/react-query";
@@ -36,15 +36,8 @@ export default function ReferralBonusScreen() {
   });
 
   const agentCode = agent?.agent_code || "";
-  const [activeTab, setActiveTab] = useState<"referrer" | "agent">("agent");
-
-  const referrerAmounts = config.REFERRAL_BONUS.AMOUNTS;
-  const referrerTotal = config.REFERRAL_BONUS.TOTAL_POTENTIAL;
-  const agentAmounts = config.NEW_AGENT_BONUS.AMOUNTS;
-  const agentTotal = config.NEW_AGENT_BONUS.TOTAL_POTENTIAL;
-
-  const amounts = activeTab === "referrer" ? referrerAmounts : agentAmounts;
-  const totalPotential = activeTab === "referrer" ? referrerTotal : agentTotal;
+  const amounts = config.REFERRAL_BONUS.AMOUNTS;
+  const totalPotential = config.REFERRAL_BONUS.TOTAL_POTENTIAL;
 
   const handleShare = async () => {
     const url = `https://partners.rivo.ae?ref=${agentCode}`;
@@ -68,66 +61,21 @@ export default function ReferralBonusScreen() {
         },
       ]}
     >
-      <Pressable
-        onPress={() => router.replace("/(tabs)")}
-        style={styles.closeBtn}
-      >
-        <Feather name="x" size={24} color={Colors.text} />
-      </Pressable>
-
       <ScrollView
         style={styles.scrollArea}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.duration(500)}>
-          <Text style={styles.title}>Earn Bonuses</Text>
+          <Text style={styles.title}>Refer Agents</Text>
           <Text style={styles.subtitle}>
-            Earn bonuses as you grow with Rivo.{"\n"}
-            <Text style={styles.subtitleBold}>
-              Close deals and refer agents to maximize earnings.
+            <Text style={styles.subtitleLine1}>
+              Earn bonuses when agents you refer close deals.
             </Text>
-          </Text>
-
-          <View style={styles.tabRow}>
-            <Pressable
-              onPress={() => setActiveTab("agent")}
-              style={[
-                styles.tab,
-                activeTab === "agent" && styles.tabActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === "agent" && styles.tabTextActive,
-                ]}
-              >
-                Your Deals
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setActiveTab("referrer")}
-              style={[
-                styles.tab,
-                activeTab === "referrer" && styles.tabActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === "referrer" && styles.tabTextActive,
-                ]}
-              >
-                Referral Agents
-              </Text>
-            </Pressable>
-          </View>
-
-          <Text style={styles.sectionLabel}>
-            {activeTab === "agent"
-              ? "Milestone bonuses for your first deals"
-              : "Bonuses when agents you refer close deals"}
+            {"\n"}
+            <Text style={styles.subtitleLine2}>
+              Share your link and start earning today.
+            </Text>
           </Text>
 
           <View style={styles.timeline}>
@@ -136,12 +84,15 @@ export default function ReferralBonusScreen() {
               const isLast = i === amounts.length - 1;
               return (
                 <View key={i} style={styles.timelineItem}>
-                  <View
-                    style={[
-                      styles.timelineDot,
-                      isLast && styles.timelineDotActive,
-                    ]}
-                  />
+                  <View style={styles.timelineDotWrapper}>
+                    {isLast && <View style={styles.timelineDotGlow} />}
+                    <View
+                      style={[
+                        styles.timelineDot,
+                        isLast && styles.timelineDotActive,
+                      ]}
+                    />
+                  </View>
                   <View style={styles.timelineContent}>
                     <Text
                       style={[
@@ -182,7 +133,7 @@ export default function ReferralBonusScreen() {
             pressed && styles.btnPressed,
           ]}
         >
-          <Ionicons name="share-outline" size={20} color="#000" />
+          <Ionicons name="share-social" size={20} color="#000" />
           <Text style={styles.shareBtnText}>Share your link</Text>
         </Pressable>
 
@@ -193,14 +144,16 @@ export default function ReferralBonusScreen() {
           <Text style={styles.skipText}>Skip for now</Text>
         </Pressable>
 
+        <View style={styles.divider} />
+
         <Pressable
           onPress={() => router.push("/referral-info")}
           style={styles.knowMoreRow}
         >
           <Text style={styles.knowMoreText}>
-            Know more about the referral program
+            Know more about the referral program{" "}
           </Text>
-          <Feather name="chevron-right" size={16} color={Colors.primary} />
+          <Ionicons name="chevron-forward" size={16} color={Colors.primary} />
         </Pressable>
       </View>
     </View>
@@ -212,15 +165,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
     paddingHorizontal: 24,
-  },
-  closeBtn: {
-    alignSelf: "flex-end",
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
   },
   scrollArea: {
     flex: 1,
@@ -236,49 +180,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   subtitle: {
-    fontFamily: "Inter_400Regular",
     fontSize: 18,
-    color: Colors.textSecondary,
     lineHeight: 28,
     marginBottom: 28,
   },
-  subtitleBold: {
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.text,
-  },
-  tabRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 20,
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  tabActive: {
-    backgroundColor: Colors.primary + "20",
-  },
-  tabText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 14,
-    color: Colors.textMuted,
-  },
-  tabTextActive: {
-    color: Colors.primary,
-    fontFamily: "Inter_600SemiBold",
-  },
-  sectionLabel: {
+  subtitleLine1: {
     fontFamily: "Inter_400Regular",
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginBottom: 24,
+    color: "#D4D4D8",
+  },
+  subtitleLine2: {
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
   },
   timeline: {
     position: "relative",
@@ -298,17 +210,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 20,
   },
+  timelineDotWrapper: {
+    width: 16,
+    height: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
   timelineDot: {
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: Colors.border,
+    backgroundColor: "#27272A",
     borderWidth: 2,
     borderColor: Colors.background,
-    zIndex: 1,
   },
   timelineDotActive: {
     backgroundColor: Colors.primary,
+  },
+  timelineDotGlow: {
+    position: "absolute",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.primary + "30",
   },
   timelineContent: {
     flex: 1,
@@ -357,7 +282,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   shareBtn: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderRadius: 14,
     height: 56,
     flexDirection: "row",
@@ -381,16 +306,17 @@ const styles = StyleSheet.create({
   skipText: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
-    color: Colors.textMuted,
+    color: "#71717A",
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: Colors.border,
   },
   knowMoreRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
     paddingBottom: 4,
   },
   knowMoreText: {

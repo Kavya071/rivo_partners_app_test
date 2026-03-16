@@ -7,12 +7,11 @@ import {
   Pressable,
   Platform,
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
 } from "react-native";
 import { router } from "expo-router";
-import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import * as Haptics from "expo-haptics";
@@ -41,8 +40,10 @@ export default function SubmitLeadScreen() {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [phoneBlurred, setPhoneBlurred] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
 
-  const commissionRate = config.COMMISSION.MIN_PERCENT;
+  const commissionRate = 0.45;
 
   const numericAmount = useMemo(() => {
     const parsed = parseFloat(loanAmount.replace(/,/g, ""));
@@ -51,7 +52,7 @@ export default function SubmitLeadScreen() {
 
   const commission = useMemo(() => {
     return (numericAmount * commissionRate) / 100;
-  }, [numericAmount, commissionRate]);
+  }, [numericAmount]);
 
   const sanitizedPhone = useMemo(() => {
     return phone.replace(/\D/g, "");
@@ -68,6 +69,7 @@ export default function SubmitLeadScreen() {
     clientName.trim().length > 0 &&
     numericAmount > 0 &&
     isPhoneValid &&
+    consentChecked &&
     !submitting &&
     !isSelfReferral;
 
@@ -115,9 +117,9 @@ export default function SubmitLeadScreen() {
     >
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Feather name="arrow-left" size={24} color={Colors.text} />
+          <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Submit Client</Text>
+        <Text style={styles.headerTitle}>New Client</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -181,7 +183,7 @@ export default function SubmitLeadScreen() {
             >
               <Text style={styles.countryFlag}>{selectedCountry.flag}</Text>
               <Text style={styles.countryCode}>{selectedCountry.code}</Text>
-              <Feather
+              <Ionicons
                 name="chevron-down"
                 size={14}
                 color={Colors.textMuted}
@@ -194,13 +196,14 @@ export default function SubmitLeadScreen() {
                 setPhone(text.replace(/\D/g, ""));
                 if (error) setError("");
               }}
+              onBlur={() => setPhoneBlurred(true)}
               placeholder={`${selectedCountry.digits} digits`}
               placeholderTextColor={Colors.textMuted}
               keyboardType="phone-pad"
               maxLength={selectedCountry.digits}
             />
           </View>
-          {sanitizedPhone.length > 0 && !isPhoneValid && (
+          {phoneBlurred && sanitizedPhone.length > 0 && !isPhoneValid && (
             <Text style={styles.errorHelper}>
               Enter {selectedCountry.digits} digits for{" "}
               {selectedCountry.country}
@@ -211,18 +214,25 @@ export default function SubmitLeadScreen() {
               You cannot submit yourself as a client.
             </Text>
           )}
+          {error ? (
+            <Text style={styles.errorHelper}>{error}</Text>
+          ) : null}
         </View>
 
-        {error ? (
-          <View style={styles.errorBanner}>
-            <Text style={styles.errorBannerText}>{error}</Text>
-          </View>
-        ) : null}
-
-        <Text style={styles.consentText}>
-          By submitting, I confirm that I have the client's consent to share
-          their contact details for mortgage processing.
-        </Text>
+        <Pressable
+          onPress={() => setConsentChecked(!consentChecked)}
+          style={styles.consentRow}
+        >
+          <Ionicons
+            name="shield-checkmark"
+            size={20}
+            color={consentChecked ? Colors.primary : Colors.textMuted}
+          />
+          <Text style={styles.consentText}>
+            I confirm that I have the client's consent to share their contact
+            details for mortgage processing.
+          </Text>
+        </Pressable>
       </KeyboardAwareScrollViewCompat>
 
       <View
@@ -241,7 +251,7 @@ export default function SubmitLeadScreen() {
           ]}
         >
           {submitting ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color="#000" size="small" />
           ) : (
             <Text style={styles.submitText}>Submit Client</Text>
           )}
@@ -264,7 +274,7 @@ export default function SubmitLeadScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Country</Text>
               <Pressable onPress={() => setShowCountryPicker(false)}>
-                <Feather name="x" size={24} color={Colors.text} />
+                <Ionicons name="close" size={24} color={Colors.text} />
               </Pressable>
             </View>
             <FlatList
@@ -275,6 +285,7 @@ export default function SubmitLeadScreen() {
                   onPress={() => {
                     setSelectedCountry(item);
                     setPhone("");
+                    setPhoneBlurred(false);
                     setShowCountryPicker(false);
                   }}
                   style={({ pressed }) => [
@@ -288,8 +299,8 @@ export default function SubmitLeadScreen() {
                   <Text style={styles.countryItemName}>{item.country}</Text>
                   <Text style={styles.countryItemCode}>{item.code}</Text>
                   {selectedCountry.code === item.code && (
-                    <Feather
-                      name="check"
+                    <Ionicons
+                      name="checkmark"
                       size={18}
                       color={Colors.primary}
                     />
@@ -439,24 +450,18 @@ const styles = StyleSheet.create({
     marginLeft: 2,
     marginTop: 2,
   },
-  errorBanner: {
-    backgroundColor: Colors.danger + "10",
-    borderWidth: 1,
-    borderColor: Colors.danger + "20",
-    borderRadius: 12,
-    padding: 12,
-  },
-  errorBannerText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    color: Colors.danger,
+  consentRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    marginTop: 4,
   },
   consentText: {
+    flex: 1,
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     color: Colors.textMuted,
     lineHeight: 19,
-    marginTop: 4,
   },
   submitBar: {
     position: "absolute",
@@ -470,7 +475,7 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.border,
   },
   submitBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: "#FFFFFF",
     borderRadius: 14,
     height: 52,
     justifyContent: "center",
@@ -486,7 +491,7 @@ const styles = StyleSheet.create({
   submitText: {
     fontFamily: "Inter_700Bold",
     fontSize: 16,
-    color: "#fff",
+    color: "#000",
   },
   modalOverlay: {
     flex: 1,
@@ -504,14 +509,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
+    paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
   },
   modalTitle: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 18,
+    fontSize: 17,
     color: Colors.text,
   },
   countryItem: {
@@ -520,8 +524,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     gap: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
   countryItemSelected: {
     backgroundColor: Colors.primary + "10",
@@ -532,7 +534,7 @@ const styles = StyleSheet.create({
   countryItemName: {
     flex: 1,
     fontFamily: "Inter_500Medium",
-    fontSize: 15,
+    fontSize: 16,
     color: Colors.text,
   },
   countryItemCode: {

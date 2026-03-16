@@ -40,7 +40,7 @@ export default function WhatsAppListeningScreen() {
   }>();
   const { login } = useAuth();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [errorCount, setErrorCount] = useState(0);
+  const [pollCount, setPollCount] = useState(0);
   const hasAutoOpened = useRef(false);
   const [verifyCode, setVerifyCodeState] = useState(paramCode || "");
   const [waUrl, setWaUrl] = useState(paramUrl || "");
@@ -115,6 +115,7 @@ export default function WhatsAppListeningScreen() {
   useEffect(() => {
     if (!verifyCode) return;
     intervalRef.current = setInterval(async () => {
+      setPollCount((c) => c + 1);
       try {
         const result = await checkVerification(verifyCode);
         if (result.verified && result.token) {
@@ -131,7 +132,7 @@ export default function WhatsAppListeningScreen() {
           }
         }
       } catch (_e) {
-        setErrorCount((c) => c + 1);
+        // poll error
       }
     }, 2000);
 
@@ -191,14 +192,13 @@ export default function WhatsAppListeningScreen() {
 
         <Animated.View entering={FadeIn.delay(500).duration(600)} style={styles.listeningRow}>
           <Animated.View style={[styles.dot, dotStyle]} />
-          <Text style={styles.listeningText}>Listening for verification...</Text>
+          <Text style={styles.listeningText}>Listening...</Text>
         </Animated.View>
 
-        {errorCount >= 5 && (
-          <View style={styles.errorBanner}>
-            <Ionicons name="alert-circle" size={18} color={Colors.danger} />
-            <Text style={styles.errorText}>
-              Having trouble connecting. Please check your internet and try again.
+        {pollCount >= 6 && (
+          <View style={styles.retryBanner}>
+            <Text style={styles.retryText}>
+              Still waiting for verification. Make sure you tapped Send in WhatsApp.
             </Text>
           </View>
         )}
@@ -250,9 +250,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.whatsapp,
   },
   whatsappCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: Colors.whatsapp,
     justifyContent: "center",
     alignItems: "center",
@@ -297,6 +297,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
   },
+  retryBanner: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  retryText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 18,
+  },
   openAgainBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -315,23 +330,5 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 16,
     color: Colors.whatsapp,
-  },
-  errorBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: Colors.danger + "12",
-    borderWidth: 1,
-    borderColor: Colors.danger + "30",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  errorText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    color: Colors.danger,
-    flex: 1,
-    lineHeight: 18,
   },
 });
