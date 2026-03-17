@@ -5,9 +5,8 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
-import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useSegments, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { Platform, useWindowDimensions, View } from "react-native";
@@ -17,7 +16,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ConfigProvider } from "@/context/ConfigContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -39,8 +38,31 @@ function ResponsiveContainer({ children }: { children: React.ReactNode }) {
   );
 }
 
+function NavGuard() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inTabs = segments[0] === "(tabs)";
+    const onLanding = segments.length === 0 || segments[0] === "index";
+
+    if (!isAuthenticated && inTabs) {
+      router.replace("/");
+    } else if (isAuthenticated && onLanding) {
+      router.replace("/(tabs)/home");
+    }
+  }, [isAuthenticated, isLoading, segments]);
+
+  return null;
+}
+
 function RootLayoutNav() {
   return (
+    <>
+    <NavGuard />
     <Stack
       screenOptions={{
         headerShown: false,
@@ -80,6 +102,7 @@ function RootLayoutNav() {
         options={{ presentation: "card" }}
       />
     </Stack>
+    </>
   );
 }
 
@@ -89,9 +112,6 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
-    ...Ionicons.font,
-    ...Feather.font,
-    ...MaterialCommunityIcons.font,
   });
 
   useEffect(() => {

@@ -1,24 +1,10 @@
-import { Tabs, router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect } from "react";
+import { Tabs } from "expo-router";
+import React from "react";
 import { StyleSheet, View } from "react-native";
 
-import Colors from "@/constants/colors";
-import { useAuth } from "@/context/AuthContext";
+import Icon from "@/components/Icon";
 
 export default function TabLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  useEffect(() => {
-    if (!isAuthenticated && !isLoading) {
-      router.replace("/");
-    }
-  }, [isAuthenticated, isLoading]);
-
-  if (isLoading || !isAuthenticated) {
-    return null;
-  }
-
   return (
     <Tabs
       screenOptions={{
@@ -46,11 +32,11 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
+            <Icon name={focused ? "home" : "home-outline"} size={24} color={color} />
           ),
         }}
       />
@@ -59,7 +45,7 @@ export default function TabLayout() {
         options={{
           title: "Clients",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "briefcase" : "briefcase-outline"} size={24} color={color} />
+            <Icon name={focused ? "briefcase" : "briefcase-outline"} size={24} color={color} />
           ),
         }}
       />
@@ -68,7 +54,7 @@ export default function TabLayout() {
         options={{
           title: "Network",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "people" : "people-outline"} size={24} color={color} />
+            <Icon name={focused ? "people" : "people-outline"} size={24} color={color} />
           ),
         }}
       />
@@ -77,7 +63,7 @@ export default function TabLayout() {
         options={{
           title: "Profile",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
+            <Icon name={focused ? "person" : "person-outline"} size={24} color={color} />
           ),
         }}
       />

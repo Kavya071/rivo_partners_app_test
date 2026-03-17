@@ -7,8 +7,9 @@ import {
   Pressable,
 } from "react-native";
 import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import Icon from "@/components/Icon";
 
 export default function PrivacyScreen() {
   const insets = useSafeAreaInsets();
@@ -21,7 +22,7 @@ export default function PrivacyScreen() {
       >
         <View style={styles.backRow}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            <Icon name="arrow-back" size={24} color="#FFFFFF" />
           </Pressable>
         </View>
 

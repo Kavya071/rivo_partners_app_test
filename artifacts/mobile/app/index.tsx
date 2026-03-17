@@ -9,7 +9,6 @@ import {
   ScrollView,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   FadeInDown,
@@ -34,11 +33,13 @@ import {
   WhatsAppType,
 } from "@/lib/whatsapp";
 import WhatsAppPickerSheet from "@/components/WhatsAppPickerSheet";
+import Icon, { IconName } from "@/components/Icon";
+import { useResponsive } from "@/hooks/useResponsive";
 
 interface ValueProp {
   title: string;
   desc: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   iconSize: number;
 }
 
@@ -67,6 +68,7 @@ export default function LandingScreen() {
   const insets = useSafeAreaInsets();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const config = useConfig();
+  const r = useResponsive();
   const params = useLocalSearchParams<{
     ref?: string;
     referral_code?: string;
@@ -99,12 +101,6 @@ export default function LandingScreen() {
     transform: [{ scale: pulseDotScale.value }],
     opacity: pulseDotOpacity.value,
   }));
-
-  useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      router.replace("/(tabs)");
-    }
-  }, [authLoading, isAuthenticated]);
 
   useEffect(() => {
     const refCode = params.ref || params.referral_code;
@@ -190,84 +186,85 @@ export default function LandingScreen() {
       contentContainerStyle={[
         styles.contentContainer,
         {
-          paddingTop: insets.top + webTopPad + 20,
-          paddingBottom: insets.bottom + webBottomPad + 20,
+          paddingTop: insets.top + webTopPad + r.sp(20),
+          paddingBottom: insets.bottom + webBottomPad + r.sp(20),
+          paddingHorizontal: r.screenPadding,
         },
       ]}
       showsVerticalScrollIndicator={false}
       bounces={false}
     >
       <Animated.View entering={FadeInUp.delay(100).duration(600)} style={styles.header}>
-        <View style={styles.logoRow}>
-          <View style={styles.logoBg}>
-            <Text style={styles.logoLetter}>R</Text>
+        <View style={[styles.logoRow, { gap: r.sp(10) }]}>
+          <View style={[styles.logoBg, { width: r.sp(40), height: r.sp(40), borderRadius: r.sp(10) }]}>
+            <Text style={[styles.logoLetter, { fontSize: r.fs(22) }]}>R</Text>
           </View>
-          <Text style={styles.logoText}>Rivo Partners</Text>
+          <Text style={[styles.logoText, { fontSize: r.fs(20) }]}>Rivo Partners</Text>
         </View>
 
         {referralName && (
-          <View style={styles.referralBadge}>
+          <View style={[styles.referralBadge, { paddingHorizontal: r.sp(12), paddingVertical: r.sp(8), gap: r.sp(10) }]}>
             <View style={styles.referralDotContainer}>
               <Animated.View style={[styles.referralDotPulse, pulseDotStyle]} />
               <View style={styles.referralDot} />
             </View>
             <View style={{ flexShrink: 1 }}>
-              <Text style={styles.referralLabel}>Referred by</Text>
-              <Text style={styles.referralNameText} numberOfLines={1}>{referralName}</Text>
+              <Text style={[styles.referralLabel, { fontSize: r.fs(10) }]}>Referred by</Text>
+              <Text style={[styles.referralNameText, { fontSize: r.fs(13) }]} numberOfLines={1}>{referralName}</Text>
             </View>
           </View>
         )}
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.heroSection}>
-        <Text style={styles.heroTitle}>
+      <Animated.View entering={FadeInDown.delay(200).duration(600)} style={[styles.heroSection, { gap: r.sp(12) }]}>
+        <Text style={[styles.heroTitle, { fontSize: r.fs(32), lineHeight: r.sp(40) }]}>
           Earn on every{"\n"}
           <Text style={styles.heroTitleGreen}>mortgage you refer.</Text>
         </Text>
-        <Text style={styles.heroSubtitle}>
+        <Text style={[styles.heroSubtitle, { fontSize: r.fs(16) }]}>
           Dubai's premier mortgage referral platform for real estate agents
         </Text>
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(400).duration(600)} style={styles.payoutCard}>
-        <Text style={styles.payoutLabel}>Average Payout</Text>
-        <View style={styles.payoutRow}>
-          <Text style={styles.payoutCurrency}>AED</Text>
-          <Text style={styles.payoutAmount}>
+      <Animated.View entering={FadeInDown.delay(400).duration(600)} style={[styles.payoutCard, { padding: r.cardPadding }]}>
+        <Text style={[styles.payoutLabel, { fontSize: r.fs(14) }]}>Average Payout</Text>
+        <View style={[styles.payoutRow, { gap: r.sp(6) }]}>
+          <Text style={[styles.payoutCurrency, { fontSize: r.fs(20) }]}>AED</Text>
+          <Text style={[styles.payoutAmount, { fontSize: r.fs(42) }]}>
             {config.COMMISSION.AVG_PAYOUT.toLocaleString()}
           </Text>
         </View>
         <View style={styles.rateBadge}>
-          <Text style={styles.rateBadgeText}>
+          <Text style={[styles.rateBadgeText, { fontSize: r.fs(12) }]}>
             {config.COMMISSION.MIN_PERCENT}% commission rate
           </Text>
         </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(500).duration(600)} style={styles.valueProps}>
+      <Animated.View entering={FadeInDown.delay(500).duration(600)} style={[styles.valueProps, { gap: r.cardGap }]}>
         {VALUE_PROPS.map((prop, i) => (
-          <View key={i} style={styles.valuePropCard}>
+          <View key={i} style={[styles.valuePropCard, { padding: r.cardPadding, gap: r.iconTextGap }]}>
             <View style={styles.valuePropIcon}>
-              <Ionicons name={prop.icon} size={prop.iconSize} color={Colors.primary} />
+              <Icon name={prop.icon} size={prop.iconSize} color={Colors.primary} />
             </View>
             <View style={styles.valuePropText}>
-              <Text style={styles.valuePropTitle}>{prop.title}</Text>
-              <Text style={styles.valuePropDesc}>{prop.desc}</Text>
+              <Text style={[styles.valuePropTitle, { fontSize: r.fs(15) }]}>{prop.title}</Text>
+              <Text style={[styles.valuePropDesc, { fontSize: r.fs(13) }]}>{prop.desc}</Text>
             </View>
           </View>
         ))}
       </Animated.View>
 
-      <View style={styles.bottomSection}>
-        <View style={styles.termsRow}>
+      <View style={[styles.bottomSection, { gap: r.sp(16) }]}>
+        <View style={[styles.termsRow, { gap: r.sp(10) }]}>
           <Pressable onPress={() => setTermsAccepted(!termsAccepted)}>
-            <Ionicons
+            <Icon
               name={termsAccepted ? "checkbox" : "square-outline"}
               size={24}
               color={termsAccepted ? Colors.primary : Colors.borderLight}
             />
           </Pressable>
-          <Text style={styles.termsText}>
+          <Text style={[styles.termsText, { fontSize: r.fs(14) }]}>
             <Text onPress={() => setTermsAccepted(!termsAccepted)}>
               I agree to the{" "}
             </Text>
@@ -293,8 +290,8 @@ export default function LandingScreen() {
             <ActivityIndicator color="#000" size="small" />
           ) : (
             <>
-              <Ionicons name="logo-whatsapp" size={22} color="#25D366" />
-              <Text style={styles.ctaText}>Get Started</Text>
+              <Icon name="logo-whatsapp" size={22} color="#25D366" />
+              <Text style={[styles.ctaText, { fontSize: r.fs(17) }]}>Get Started</Text>
             </>
           )}
         </Pressable>
@@ -304,7 +301,7 @@ export default function LandingScreen() {
           disabled={!termsAccepted || loading}
           style={styles.signInRow}
         >
-          <Text style={[styles.signInText, (!termsAccepted || loading) && { opacity: 0.4 }]}>
+          <Text style={[styles.signInText, { fontSize: r.fs(14) }, (!termsAccepted || loading) && { opacity: 0.4 }]}>
             Already have an account?{" "}
             <Text style={styles.signInLink}>Sign In</Text>
           </Text>
@@ -327,7 +324,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flexGrow: 1,
-    paddingHorizontal: 24,
     justifyContent: "space-between",
   },
   header: {
@@ -340,24 +336,18 @@ const styles = StyleSheet.create({
   logoRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
   },
   logoBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
     backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
   },
   logoLetter: {
     fontFamily: "Inter_700Bold",
-    fontSize: 22,
     color: "#fff",
   },
   logoText: {
     fontFamily: "Inter_700Bold",
-    fontSize: 20,
     color: Colors.text,
   },
   referralBadge: {
@@ -367,9 +357,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 10,
     flexShrink: 1,
     maxWidth: "60%",
   },
@@ -394,25 +381,19 @@ const styles = StyleSheet.create({
   },
   referralLabel: {
     fontFamily: "Inter_500Medium",
-    fontSize: 10,
     color: Colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.8,
   },
   referralNameText: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
     color: Colors.text,
     flexShrink: 1,
   },
-  heroSection: {
-    gap: 12,
-  },
+  heroSection: {},
   heroTitle: {
     fontFamily: "Inter_700Bold",
-    fontSize: 32,
     color: Colors.text,
-    lineHeight: 40,
     flexShrink: 1,
   },
   heroTitleGreen: {
@@ -420,7 +401,6 @@ const styles = StyleSheet.create({
   },
   heroSubtitle: {
     fontFamily: "Inter_400Regular",
-    fontSize: 16,
     color: Colors.textSecondary,
     lineHeight: 24,
   },
@@ -430,13 +410,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.primary + "30",
     backgroundColor: "#0a2e1a",
-    padding: 24,
     alignItems: "center",
     gap: 4,
   },
   payoutLabel: {
     fontFamily: "Inter_500Medium",
-    fontSize: 14,
     color: Colors.primary,
     textTransform: "uppercase",
     letterSpacing: 1,
@@ -444,16 +422,13 @@ const styles = StyleSheet.create({
   payoutRow: {
     flexDirection: "row",
     alignItems: "baseline",
-    gap: 6,
   },
   payoutCurrency: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 20,
     color: Colors.primary,
   },
   payoutAmount: {
     fontFamily: "Inter_700Bold",
-    fontSize: 42,
     color: Colors.primary,
     flexShrink: 1,
   },
@@ -466,19 +441,14 @@ const styles = StyleSheet.create({
   },
   rateBadgeText: {
     fontFamily: "Inter_500Medium",
-    fontSize: 12,
     color: Colors.primary,
   },
-  valueProps: {
-    gap: 12,
-  },
+  valueProps: {},
   valuePropCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: Colors.surface,
     borderRadius: 14,
-    padding: 16,
-    gap: 14,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -496,31 +466,26 @@ const styles = StyleSheet.create({
   },
   valuePropTitle: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
     color: Colors.text,
   },
   valuePropDesc: {
     fontFamily: "Inter_400Regular",
-    fontSize: 13,
     color: Colors.textSecondary,
   },
-  bottomSection: {
-    gap: 16,
-  },
+  bottomSection: {},
   termsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
   },
   termsText: {
     fontFamily: "Inter_400Regular",
-    fontSize: 14,
     color: Colors.textSecondary,
-    flexShrink: 1,
+    flex: 1,
+    lineHeight: 20,
   },
   termsLink: {
     color: Colors.primary,
-    textDecorationLine: "underline",
+    fontWeight: "500",
   },
   ctaButton: {
     backgroundColor: "#FFFFFF",
@@ -532,7 +497,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   ctaDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   ctaPressed: {
     opacity: 0.85,
@@ -540,7 +505,6 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     fontFamily: "Inter_700Bold",
-    fontSize: 17,
     color: "#000",
   },
   signInRow: {
@@ -549,12 +513,10 @@ const styles = StyleSheet.create({
   },
   signInText: {
     fontFamily: "Inter_400Regular",
-    fontSize: 14,
     color: Colors.textSecondary,
   },
   signInLink: {
     fontFamily: "Inter_600SemiBold",
-    color: Colors.text,
-    textDecorationLine: "underline",
+    color: Colors.primary,
   },
 });

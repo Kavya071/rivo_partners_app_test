@@ -7,9 +7,9 @@ import {
   Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import Colors from "@/constants/colors";
 import { setWhatsAppPref, WhatsAppType } from "@/lib/whatsapp";
+import Icon from "@/components/Icon";
 
 interface WhatsAppPickerSheetProps {
   visible: boolean;
@@ -55,7 +55,7 @@ export default function WhatsAppPickerSheet({
             ]}
           >
             <View style={styles.iconCircle}>
-              <Ionicons name="logo-whatsapp" size={32} color="#fff" />
+              <Icon name="logo-whatsapp" size={32} color="#fff" />
             </View>
             <Text style={styles.optionLabel}>Personal</Text>
           </Pressable>
@@ -68,7 +68,7 @@ export default function WhatsAppPickerSheet({
             ]}
           >
             <View style={styles.iconCircle}>
-              <Ionicons name="logo-whatsapp" size={32} color="#fff" />
+              <Icon name="logo-whatsapp" size={32} color="#fff" />
               <View style={styles.businessBadge}>
                 <Text style={styles.businessBadgeText}>B</Text>
               </View>

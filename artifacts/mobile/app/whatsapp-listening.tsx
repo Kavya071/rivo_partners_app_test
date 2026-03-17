@@ -8,7 +8,6 @@ import {
   ScrollView,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
@@ -31,6 +30,7 @@ import {
   clearReferralCode,
   openWhatsAppFromUrl,
 } from "@/lib/whatsapp";
+import Icon from "@/components/Icon";
 
 export default function WhatsAppListeningScreen() {
   const insets = useSafeAreaInsets();
@@ -93,7 +93,6 @@ export default function WhatsAppListeningScreen() {
         try {
           await Linking.openURL(waUrl);
         } catch {
-          // ignore
         }
       }
     };
@@ -106,7 +105,6 @@ export default function WhatsAppListeningScreen() {
         try {
           await Linking.openURL(paramVerifyLink);
         } catch {
-          // ignore
         }
       };
       handleDirectVerify();
@@ -129,11 +127,10 @@ export default function WhatsAppListeningScreen() {
           if (agent && !agent.has_completed_first_action) {
             router.replace("/referral-bonus");
           } else {
-            router.replace("/(tabs)");
+            router.replace("/(tabs)/home");
           }
         }
       } catch (_e) {
-        // poll error
       }
     }, 2000);
 
@@ -174,7 +171,7 @@ export default function WhatsAppListeningScreen() {
       showsVerticalScrollIndicator={false}
     >
       <Pressable onPress={() => router.back()} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color={Colors.text} />
+        <Icon name="arrow-back" size={24} color={Colors.text} />
       </Pressable>
 
       <View style={styles.centerContent}>
@@ -182,7 +179,7 @@ export default function WhatsAppListeningScreen() {
           <View style={styles.iconContainer}>
             <Animated.View style={[styles.pulse, pulseStyle]} />
             <View style={styles.whatsappCircle}>
-              <Ionicons name="logo-whatsapp" size={48} color="#fff" />
+              <Icon name="logo-whatsapp" size={48} color="#fff" />
             </View>
           </View>
         </Animated.View>
@@ -215,7 +212,7 @@ export default function WhatsAppListeningScreen() {
           pressed && styles.openAgainPressed,
         ]}
       >
-        <Ionicons name="logo-whatsapp" size={20} color={Colors.whatsapp} />
+        <Icon name="logo-whatsapp" size={20} color={Colors.whatsapp} />
         <Text style={styles.openAgainText}>Open WhatsApp again</Text>
       </Pressable>
     </ScrollView>

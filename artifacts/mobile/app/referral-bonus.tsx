@@ -9,7 +9,6 @@ import {
   ScrollView,
 } from "react-native";
 import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useQuery } from "@tanstack/react-query";
@@ -17,6 +16,8 @@ import { useQuery } from "@tanstack/react-query";
 import Colors from "@/constants/colors";
 import { useConfig } from "@/context/ConfigContext";
 import { getMe } from "@/lib/api";
+import Icon from "@/components/Icon";
+import { useResponsive } from "@/hooks/useResponsive";
 
 function ordinal(n: number): string {
   const s = ["th", "st", "nd", "rd"];
@@ -29,6 +30,7 @@ export default function ReferralBonusScreen() {
   const webTopPad = Platform.OS === "web" ? 67 : 0;
   const webBottomPad = Platform.OS === "web" ? 34 : 0;
   const config = useConfig();
+  const r = useResponsive();
 
   const { data: agent } = useQuery({
     queryKey: ["agent-me"],
@@ -47,7 +49,6 @@ export default function ReferralBonusScreen() {
     try {
       await Share.share({ message: msg });
     } catch {
-      // cancelled
     }
   };
 
@@ -56,19 +57,20 @@ export default function ReferralBonusScreen() {
       style={[
         styles.container,
         {
-          paddingTop: insets.top + webTopPad + 16,
-          paddingBottom: insets.bottom + webBottomPad + 20,
+          paddingTop: insets.top + webTopPad + r.sp(16),
+          paddingBottom: insets.bottom + webBottomPad + r.sp(20),
+          paddingHorizontal: r.screenPadding,
         },
       ]}
     >
       <ScrollView
         style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: r.sp(12), paddingBottom: r.sp(20) }]}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.duration(500)}>
-          <Text style={styles.title}>Refer Agents</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { fontSize: r.fs(32), marginBottom: r.sp(12) }]}>Refer Agents</Text>
+          <Text style={[styles.subtitle, { fontSize: r.fs(18), marginBottom: r.sectionGap }]}>
             <Text style={styles.subtitleLine1}>
               Earn bonuses when agents you refer close deals.
             </Text>
@@ -78,12 +80,12 @@ export default function ReferralBonusScreen() {
             </Text>
           </Text>
 
-          <View style={styles.timeline}>
+          <View style={[styles.timeline, { gap: r.sp(32) }]}>
             <View style={styles.timelineLine} />
             {amounts.map((amount, i) => {
               const isLast = i === amounts.length - 1;
               return (
-                <View key={i} style={styles.timelineItem}>
+                <View key={i} style={[styles.timelineItem, { gap: r.sp(20) }]}>
                   <View style={styles.timelineDotWrapper}>
                     {isLast && <View style={styles.timelineDotGlow} />}
                     <View
@@ -97,6 +99,7 @@ export default function ReferralBonusScreen() {
                     <Text
                       style={[
                         styles.timelineDeal,
+                        { fontSize: r.fs(17) },
                         isLast && styles.timelineDealActive,
                       ]}
                     >
@@ -105,6 +108,7 @@ export default function ReferralBonusScreen() {
                     <Text
                       style={[
                         styles.timelineAmount,
+                        { fontSize: r.fs(20) },
                         isLast && styles.timelineAmountActive,
                       ]}
                     >
@@ -116,16 +120,16 @@ export default function ReferralBonusScreen() {
             })}
           </View>
 
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total Potential</Text>
-            <Text style={styles.totalValue}>
+          <View style={[styles.totalRow, { marginTop: r.sp(40), paddingTop: r.sectionGap }]}>
+            <Text style={[styles.totalLabel, { fontSize: r.fs(13) }]}>Total Potential</Text>
+            <Text style={[styles.totalValue, { fontSize: r.fs(26) }]}>
               AED {totalPotential.toLocaleString()}
             </Text>
           </View>
         </Animated.View>
       </ScrollView>
 
-      <View style={styles.bottomSection}>
+      <View style={[styles.bottomSection, { gap: r.sp(14), paddingBottom: r.sp(8) }]}>
         <Pressable
           onPress={handleShare}
           style={({ pressed }) => [
@@ -133,15 +137,15 @@ export default function ReferralBonusScreen() {
             pressed && styles.btnPressed,
           ]}
         >
-          <Ionicons name="share-social" size={20} color="#000" />
-          <Text style={styles.shareBtnText}>Share your link</Text>
+          <Icon name="share-social" size={20} color="#000" />
+          <Text style={[styles.shareBtnText, { fontSize: r.fs(17) }]}>Share your link</Text>
         </Pressable>
 
         <Pressable
-          onPress={() => router.replace("/(tabs)")}
+          onPress={() => router.replace("/(tabs)/home")}
           style={styles.skipBtn}
         >
-          <Text style={styles.skipText}>Skip for now</Text>
+          <Text style={[styles.skipText, { fontSize: r.fs(14) }]}>Skip for now</Text>
         </Pressable>
 
         <View style={styles.divider} />
@@ -150,10 +154,10 @@ export default function ReferralBonusScreen() {
           onPress={() => router.push("/referral-info")}
           style={styles.knowMoreRow}
         >
-          <Text style={styles.knowMoreText}>
+          <Text style={[styles.knowMoreText, { fontSize: r.fs(13) }]}>
             Know more about the referral program{" "}
           </Text>
-          <Ionicons name="chevron-forward" size={16} color={Colors.primary} />
+          <Icon name="chevron-forward" size={16} color={Colors.primary} />
         </Pressable>
       </View>
     </View>
@@ -164,26 +168,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    paddingHorizontal: 24,
   },
   scrollArea: {
     flex: 1,
   },
-  scrollContent: {
-    paddingBottom: 20,
-    paddingTop: 12,
-  },
+  scrollContent: {},
   title: {
     fontFamily: "Inter_700Bold",
-    fontSize: 32,
     color: Colors.text,
-    marginBottom: 12,
     flexShrink: 1,
   },
   subtitle: {
-    fontSize: 18,
     lineHeight: 28,
-    marginBottom: 28,
   },
   subtitleLine1: {
     fontFamily: "Inter_400Regular",
@@ -196,7 +192,6 @@ const styles = StyleSheet.create({
   timeline: {
     position: "relative",
     paddingLeft: 16,
-    gap: 32,
   },
   timelineLine: {
     position: "absolute",
@@ -209,7 +204,6 @@ const styles = StyleSheet.create({
   timelineItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 20,
   },
   timelineDotWrapper: {
     width: 16,
@@ -244,7 +238,6 @@ const styles = StyleSheet.create({
   },
   timelineDeal: {
     fontFamily: "Inter_500Medium",
-    fontSize: 17,
     color: Colors.textSecondary,
   },
   timelineDealActive: {
@@ -252,7 +245,6 @@ const styles = StyleSheet.create({
   },
   timelineAmount: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 20,
     color: Colors.text,
     flexShrink: 1,
   },
@@ -263,27 +255,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 40,
-    paddingTop: 24,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
   totalLabel: {
     fontFamily: "Inter_500Medium",
-    fontSize: 13,
     color: Colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 1,
   },
   totalValue: {
     fontFamily: "Inter_700Bold",
-    fontSize: 26,
     color: Colors.text,
     flexShrink: 1,
   },
-  bottomSection: {
-    gap: 12,
-  },
+  bottomSection: {},
   shareBtn: {
     backgroundColor: "#FFFFFF",
     borderRadius: 14,
@@ -295,7 +281,6 @@ const styles = StyleSheet.create({
   },
   shareBtnText: {
     fontFamily: "Inter_700Bold",
-    fontSize: 17,
     color: "#000",
   },
   btnPressed: {
@@ -308,7 +293,6 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontFamily: "Inter_500Medium",
-    fontSize: 14,
     color: "#71717A",
   },
   divider: {
@@ -325,7 +309,6 @@ const styles = StyleSheet.create({
   },
   knowMoreText: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
     color: Colors.primary,
   },
 });

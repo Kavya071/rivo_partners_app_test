@@ -9,16 +9,34 @@ import {
   ActivityIndicator,
   Switch,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
+import * as AuthSession from "expo-auth-session";
+import * as WebBrowser from "expo-web-browser";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 
+import { router } from "expo-router";
 import Colors from "@/constants/colors";
-import { getMe, updateProfile, logout, deleteAccount } from "@/lib/api";
+import { getMe, updateProfile, logout, deleteAccount, connectOutlook } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import Icon from "@/components/Icon";
+import { useResponsive } from "@/hooks/useResponsive";
+
+WebBrowser.maybeCompleteAuthSession();
+
+const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || "";
+const MICROSOFT_CLIENT_ID = process.env.EXPO_PUBLIC_MICROSOFT_CLIENT_ID || "";
+
+const googleDiscovery = {
+  authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
+  tokenEndpoint: "https://oauth2.googleapis.com/token",
+};
+
+const microsoftDiscovery = {
+  authorizationEndpoint: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+  tokenEndpoint: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+};
 
 const AGENT_TYPE_OPTIONS = [
   { value: "RE_BROKER", label: "Real Estate Broker" },
@@ -35,6 +53,7 @@ export default function ProfileScreen() {
   const { signOut } = useAuth();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
+  const r = useResponsive();
 
   const { data: agent, isLoading } = useQuery({
     queryKey: ["agent-me"],
@@ -51,6 +70,78 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [connectingGoogle, setConnectingGoogle] = useState(false);
+  const [connectingOutlookState, setConnectingOutlookState] = useState(false);
+
+  const googleRedirectUri = AuthSession.makeRedirectUri();
+  const outlookRedirectUri = AuthSession.makeRedirectUri();
+
+  const [googleRequest, googleResponse, googlePromptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: GOOGLE_CLIENT_ID,
+      redirectUri: googleRedirectUri,
+      scopes: ["email", "profile"],
+      responseType: AuthSession.ResponseType.Code,
+      usePKCE: true,
+    },
+    googleDiscovery,
+  );
+
+  const [outlookRequest, outlookResponse, outlookPromptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: MICROSOFT_CLIENT_ID,
+      redirectUri: outlookRedirectUri,
+      scopes: ["openid", "email", "profile", "User.Read"],
+      responseType: AuthSession.ResponseType.Code,
+      usePKCE: true,
+    },
+    microsoftDiscovery,
+  );
+
+  useEffect(() => {
+    if (googleResponse?.type === "success" && googleResponse.params.code) {
+      setConnectingGoogle(true);
+      AuthSession.exchangeCodeAsync(
+        {
+          clientId: GOOGLE_CLIENT_ID,
+          code: googleResponse.params.code,
+          redirectUri: googleRedirectUri,
+          extraParams: { code_verifier: googleRequest?.codeVerifier || "" },
+        },
+        googleDiscovery,
+      )
+        .then((tokenResult) =>
+          fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+            headers: { Authorization: `Bearer ${tokenResult.accessToken}` },
+          }),
+        )
+        .then((res) => res.json())
+        .then(async (profile) => {
+          if (profile.email) {
+            setEmail(profile.email);
+            await updateProfile({ email: profile.email });
+            queryClient.invalidateQueries({ queryKey: ["agent-me"] });
+          }
+        })
+        .catch(() => {})
+        .finally(() => setConnectingGoogle(false));
+    }
+  }, [googleResponse]);
+
+  useEffect(() => {
+    if (outlookResponse?.type === "success" && outlookResponse.params.code) {
+      setConnectingOutlookState(true);
+      connectOutlook(outlookResponse.params.code, outlookRedirectUri)
+        .then(async (updatedAgent) => {
+          if (updatedAgent.email) {
+            setEmail(updatedAgent.email);
+          }
+          queryClient.invalidateQueries({ queryKey: ["agent-me"] });
+        })
+        .catch(() => {})
+        .finally(() => setConnectingOutlookState(false));
+    }
+  }, [outlookResponse]);
 
   useEffect(() => {
     if (agent) {
@@ -84,38 +175,25 @@ export default function ProfileScreen() {
       }
       setIsEditing(false);
     } catch (_e) {
-      // silent
     } finally {
       setSaving(false);
     }
   };
 
-  const handleLogout = async () => {
+  const handleSignOut = async () => {
     try {
-      await logout();
-    } catch (_e) {
-      // ignore
-    }
+      logout().catch(() => {});
+    } catch (_e) {}
+    await signOut();
     router.replace("/");
-    try {
-      await signOut();
-    } catch (_e) {
-      // ignore
-    }
   };
 
   const handleDelete = async () => {
     try {
       await deleteAccount();
-    } catch (_e) {
-      // ignore
-    }
+    } catch (_e) {}
+    await signOut();
     router.replace("/");
-    try {
-      await signOut();
-    } catch (_e) {
-      // ignore
-    }
   };
 
   if (isLoading) {
@@ -128,11 +206,15 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top > 0 ? insets.top + 8 : 48 }]}>
-        <Text style={styles.headerTitle}>Profile</Text>
+      <View style={[styles.header, {
+        paddingTop: insets.top > 0 ? insets.top + r.sp(8) : 48,
+        paddingHorizontal: r.screenPadding,
+        paddingBottom: r.sectionGap,
+      }]}>
+        <Text style={[styles.headerTitle, { fontSize: r.fs(30) }]}>Profile</Text>
         {!isEditing && (
           <Pressable onPress={() => setIsEditing(true)}>
-            <Text style={styles.editLink}>Edit</Text>
+            <Text style={[styles.editLink, { fontSize: r.fs(16) }]}>Edit</Text>
           </Pressable>
         )}
       </View>
@@ -140,35 +222,39 @@ export default function ProfileScreen() {
       <KeyboardAwareScrollViewCompat
         bottomOffset={20}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: 96 + insets.bottom }]}
+        contentContainerStyle={[styles.scrollContent, {
+          paddingHorizontal: r.screenPadding,
+          paddingTop: r.sectionGap,
+          paddingBottom: 96 + insets.bottom,
+        }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.avatarRow}>
-          <View style={styles.avatar}>
-            <Ionicons name="person-outline" size={40} color="#A1A1AA" />
+        <View style={[styles.avatarRow, { gap: r.iconTextGap, marginBottom: r.sectionGap }]}>
+          <View style={[styles.avatar, { width: r.sp(80), height: r.sp(80), borderRadius: r.sp(40) }]}>
+            <Icon name="person-outline" size={r.sp(40)} color="#A1A1AA" />
           </View>
           <View style={styles.avatarInfo}>
-            <Text style={styles.profileName} numberOfLines={1}>
+            <Text style={[styles.profileName, { fontSize: r.fs(20) }]} numberOfLines={1}>
               {agent?.name || "Partner"}
             </Text>
-            <Text style={styles.profilePhone}>{agent?.phone || ""}</Text>
+            <Text style={[styles.profilePhone, { fontSize: r.fs(14) }]}>{agent?.phone || ""}</Text>
             <View style={styles.verifiedBadge}>
-              <Ionicons
+              <Icon
                 name="checkmark-circle"
                 size={14}
                 color={Colors.primary}
               />
-              <Text style={styles.verifiedText}>Verified Partner</Text>
+              <Text style={[styles.verifiedText, { fontSize: r.fs(13) }]}>Verified Partner</Text>
             </View>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Personal Details</Text>
+        <Text style={[styles.sectionTitle, { fontSize: r.fs(16), marginBottom: r.sp(16), marginTop: r.sectionGap }]}>Personal Details</Text>
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Full Name</Text>
+        <View style={[styles.fieldGroup, { marginBottom: r.sp(18) }]}>
+          <Text style={[styles.fieldLabel, { fontSize: r.fs(13) }]}>Full Name</Text>
           <TextInput
-            style={[styles.textInput, !isEditing && styles.textInputDisabled]}
+            style={[styles.textInput, { fontSize: r.fs(15), paddingHorizontal: r.cardPadding }, !isEditing && styles.textInputDisabled]}
             value={name}
             onChangeText={setName}
             placeholderTextColor={Colors.textMuted}
@@ -177,25 +263,27 @@ export default function ProfileScreen() {
           />
         </View>
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Agent Type</Text>
+        <View style={[styles.fieldGroup, { marginBottom: r.sp(18) }]}>
+          <Text style={[styles.fieldLabel, { fontSize: r.fs(13) }]}>Agent Type</Text>
           <Pressable
             onPress={() => isEditing && setShowTypePicker(!showTypePicker)}
             style={[
               styles.selectInput,
+              { paddingHorizontal: r.cardPadding },
               !isEditing && styles.textInputDisabled,
             ]}
           >
             <Text
               style={[
                 styles.selectText,
+                { fontSize: r.fs(15) },
                 !agentType && { color: Colors.textMuted },
               ]}
             >
               {getAgentTypeLabel(agentType)}
             </Text>
             {isEditing && (
-              <Ionicons
+              <Icon
                 name={showTypePicker ? "chevron-up" : "chevron-down"}
                 size={18}
                 color={Colors.textMuted}
@@ -213,6 +301,7 @@ export default function ProfileScreen() {
                   }}
                   style={({ pressed }) => [
                     styles.pickerItem,
+                    { paddingHorizontal: r.cardPadding },
                     agentType === opt.value && styles.pickerItemSelected,
                     pressed && { opacity: 0.7 },
                   ]}
@@ -220,13 +309,14 @@ export default function ProfileScreen() {
                   <Text
                     style={[
                       styles.pickerItemText,
+                      { fontSize: r.fs(15) },
                       agentType === opt.value && styles.pickerItemTextSelected,
                     ]}
                   >
                     {opt.label}
                   </Text>
                   {agentType === opt.value && (
-                    <Ionicons
+                    <Icon
                       name="checkmark"
                       size={16}
                       color={Colors.primary}
@@ -239,11 +329,12 @@ export default function ProfileScreen() {
         </View>
 
         {showReraField && (
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>RERA Number</Text>
+          <View style={[styles.fieldGroup, { marginBottom: r.sp(18) }]}>
+            <Text style={[styles.fieldLabel, { fontSize: r.fs(13) }]}>RERA Number</Text>
             <TextInput
               style={[
                 styles.textInput,
+                { fontSize: r.fs(15), paddingHorizontal: r.cardPadding },
                 !isEditing && styles.textInputDisabled,
               ]}
               value={reraNumber}
@@ -256,11 +347,12 @@ export default function ProfileScreen() {
         )}
 
         {showOtherField && (
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>What do you do?</Text>
+          <View style={[styles.fieldGroup, { marginBottom: r.sp(18) }]}>
+            <Text style={[styles.fieldLabel, { fontSize: r.fs(13) }]}>What do you do?</Text>
             <TextInput
               style={[
                 styles.textInput,
+                { fontSize: r.fs(15), paddingHorizontal: r.cardPadding },
                 !isEditing && styles.textInputDisabled,
               ]}
               value={agentTypeOther}
@@ -274,31 +366,65 @@ export default function ProfileScreen() {
 
         {showConnectAccounts && (
           <>
-            <Text style={styles.sectionTitle}>Connect Accounts</Text>
-            <View style={styles.connectRow}>
+            <Text style={[styles.sectionTitle, { fontSize: r.fs(16), marginBottom: r.sp(16), marginTop: r.sectionGap }]}>Connect Accounts</Text>
+            <View style={[styles.connectRow, { gap: r.cardGap, marginBottom: r.sp(16) }]}>
               <Pressable
+                disabled={!googleRequest || connectingGoogle || !GOOGLE_CLIENT_ID}
+                onPress={async () => {
+                  setConnectingGoogle(true);
+                  try {
+                    const result = await googlePromptAsync();
+                    if (result?.type !== "success") setConnectingGoogle(false);
+                  } catch {
+                    setConnectingGoogle(false);
+                  }
+                }}
                 style={({ pressed }) => [
                   styles.connectBtn,
+                  (!GOOGLE_CLIENT_ID || connectingGoogle) && { opacity: 0.5 },
                   pressed && { opacity: 0.7 },
                 ]}
               >
-                <Ionicons name="logo-google" size={20} color="#fff" />
-                <Text style={styles.connectBtnText}>Google</Text>
+                {connectingGoogle ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Icon name="logo-google" size={20} color="#fff" />
+                )}
+                <Text style={[styles.connectBtnText, { fontSize: r.fs(14) }]}>
+                  {connectingGoogle ? "Connecting..." : !GOOGLE_CLIENT_ID ? "Not configured" : "Google"}
+                </Text>
               </Pressable>
               <Pressable
+                disabled={!outlookRequest || connectingOutlookState || !MICROSOFT_CLIENT_ID}
+                onPress={async () => {
+                  setConnectingOutlookState(true);
+                  try {
+                    const result = await outlookPromptAsync();
+                    if (result?.type !== "success") setConnectingOutlookState(false);
+                  } catch {
+                    setConnectingOutlookState(false);
+                  }
+                }}
                 style={({ pressed }) => [
                   styles.connectBtn,
+                  (!MICROSOFT_CLIENT_ID || connectingOutlookState) && { opacity: 0.5 },
                   pressed && { opacity: 0.7 },
                 ]}
               >
-                <Ionicons name="mail-outline" size={20} color="#fff" />
-                <Text style={styles.connectBtnText}>Outlook</Text>
+                {connectingOutlookState ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Icon name="mail-outline" size={20} color="#fff" />
+                )}
+                <Text style={[styles.connectBtnText, { fontSize: r.fs(14) }]}>
+                  {connectingOutlookState ? "Connecting..." : !MICROSOFT_CLIENT_ID ? "Not configured" : "Outlook"}
+                </Text>
               </Pressable>
             </View>
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Email</Text>
+            <View style={[styles.fieldGroup, { marginBottom: r.sp(18) }]}>
+              <Text style={[styles.fieldLabel, { fontSize: r.fs(13) }]}>Email</Text>
               <TextInput
-                style={[styles.textInput]}
+                style={[styles.textInput, { fontSize: r.fs(15), paddingHorizontal: r.cardPadding }]}
                 value={email}
                 onChangeText={setEmail}
                 placeholder="your@email.com"
@@ -311,9 +437,9 @@ export default function ProfileScreen() {
           </>
         )}
 
-        <Text style={styles.sectionTitle}>Notifications</Text>
-        <View style={styles.notificationRow}>
-          <Text style={styles.notificationLabel}>Push Notifications</Text>
+        <Text style={[styles.sectionTitle, { fontSize: r.fs(16), marginBottom: r.sp(16), marginTop: r.sectionGap }]}>Notifications</Text>
+        <View style={[styles.notificationRow, { marginBottom: r.sectionGap }]}>
+          <Text style={[styles.notificationLabel, { fontSize: r.fs(15) }]}>Push Notifications</Text>
           <Switch
             value={pushEnabled}
             onValueChange={setPushEnabled}
@@ -328,6 +454,7 @@ export default function ProfileScreen() {
             disabled={saving}
             style={({ pressed }) => [
               styles.saveBtn,
+              { marginBottom: r.sectionGap },
               saving && styles.saveBtnDisabled,
               pressed && !saving && { opacity: 0.85 },
             ]}
@@ -335,21 +462,21 @@ export default function ProfileScreen() {
             {saving ? (
               <ActivityIndicator color="#000" size="small" />
             ) : (
-              <Text style={styles.saveBtnText}>Save Profile</Text>
+              <Text style={[styles.saveBtnText, { fontSize: r.fs(16) }]}>Save Profile</Text>
             )}
           </Pressable>
         )}
 
-        <View style={styles.footerSection}>
+        <View style={[styles.footerSection, { paddingTop: r.sectionGap, gap: r.sp(16) }]}>
           <Pressable
-            onPress={handleLogout}
+            onPress={handleSignOut}
             style={({ pressed }) => [
               styles.signOutBtn,
               pressed && { opacity: 0.7 },
             ]}
           >
-            <Ionicons name="log-out-outline" size={20} color={Colors.danger} />
-            <Text style={styles.signOutText}>Sign Out</Text>
+            <Icon name="log-out-outline" size={20} color={Colors.danger} />
+            <Text style={[styles.signOutText, { fontSize: r.fs(15) }]}>Sign Out</Text>
           </Pressable>
 
           {!showDeleteConfirm ? (
@@ -360,15 +487,15 @@ export default function ProfileScreen() {
                 pressed && { opacity: 0.7 },
               ]}
             >
-              <Ionicons name="trash-outline" size={20} color={Colors.danger} />
-              <Text style={styles.deleteBtnText}>Delete Account</Text>
+              <Icon name="trash-outline" size={20} color={Colors.danger} />
+              <Text style={[styles.deleteBtnText, { fontSize: r.fs(15) }]}>Delete Account</Text>
             </Pressable>
           ) : (
-            <View style={styles.deleteConfirm}>
-              <Text style={styles.deleteConfirmText}>
+            <View style={[styles.deleteConfirm, { padding: r.cardPadding, gap: r.sp(12) }]}>
+              <Text style={[styles.deleteConfirmText, { fontSize: r.fs(14) }]}>
                 Are you sure? This cannot be undone.
               </Text>
-              <View style={styles.deleteConfirmActions}>
+              <View style={[styles.deleteConfirmActions, { gap: r.cardGap }]}>
                 <Pressable
                   onPress={() => setShowDeleteConfirm(false)}
                   style={({ pressed }) => [
@@ -376,7 +503,7 @@ export default function ProfileScreen() {
                     pressed && { opacity: 0.7 },
                   ]}
                 >
-                  <Text style={styles.deleteConfirmCancelText}>Cancel</Text>
+                  <Text style={[styles.deleteConfirmCancelText, { fontSize: r.fs(14) }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   onPress={handleDelete}
@@ -385,7 +512,7 @@ export default function ProfileScreen() {
                     pressed && { opacity: 0.7 },
                   ]}
                 >
-                  <Text style={styles.deleteConfirmDeleteText}>Delete</Text>
+                  <Text style={[styles.deleteConfirmDeleteText, { fontSize: r.fs(14) }]}>Delete</Text>
                 </Pressable>
               </View>
             </View>
@@ -407,8 +534,6 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: "#000000",
-    paddingHorizontal: 24,
-    paddingBottom: 24,
     borderBottomWidth: 1,
     borderBottomColor: "#27272A",
     flexDirection: "row",
@@ -416,29 +541,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerTitle: {
-    fontSize: 30,
     fontWeight: "500",
     color: Colors.text,
   },
   editLink: {
-    fontSize: 16,
     color: "#00D084",
     fontWeight: "500",
   },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-  },
+  scrollContent: {},
   avatarRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 32,
-    gap: 16,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
     backgroundColor: "#18181B",
     justifyContent: "center",
     alignItems: "center",
@@ -448,13 +563,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   profileName: {
-    fontSize: 20,
     fontWeight: "700",
     color: Colors.text,
     flexShrink: 1,
   },
   profilePhone: {
-    fontSize: 14,
     color: Colors.textSecondary,
   },
   verifiedBadge: {
@@ -464,22 +577,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   verifiedText: {
-    fontSize: 13,
     color: Colors.primary,
     fontWeight: "500",
   },
   sectionTitle: {
-    fontSize: 16,
     fontWeight: "600",
     color: Colors.text,
-    marginBottom: 16,
-    marginTop: 8,
   },
-  fieldGroup: {
-    marginBottom: 16,
-  },
+  fieldGroup: {},
   fieldLabel: {
-    fontSize: 13,
     color: Colors.textSecondary,
     marginBottom: 6,
     fontWeight: "500",
@@ -489,9 +595,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#27272A",
-    paddingHorizontal: 16,
     height: 56,
-    fontSize: 15,
     color: Colors.text,
   },
   textInputDisabled: {
@@ -502,48 +606,43 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#27272A",
-    paddingHorizontal: 16,
     height: 56,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   selectText: {
-    fontSize: 15,
     color: Colors.text,
+    flex: 1,
   },
   pickerDropdown: {
     backgroundColor: "#18181B",
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#27272A",
-    overflow: "hidden",
     marginTop: 4,
+    overflow: "hidden",
   },
   pickerItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
     paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
     borderBottomColor: "#27272A",
   },
   pickerItemSelected: {
-    backgroundColor: Colors.primary + "10",
+    backgroundColor: "#27272A",
   },
   pickerItemText: {
-    fontSize: 15,
     color: Colors.text,
   },
   pickerItemTextSelected: {
-    fontWeight: "600",
     color: Colors.primary,
+    fontWeight: "500",
   },
   connectRow: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 16,
   },
   connectBtn: {
     flex: 1,
@@ -558,107 +657,74 @@ const styles = StyleSheet.create({
     height: 48,
   },
   connectBtnText: {
-    fontSize: 15,
     color: Colors.text,
     fontWeight: "500",
   },
   notificationRow: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#18181B",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#27272A",
-    paddingHorizontal: 16,
-    height: 56,
-    marginBottom: 24,
+    alignItems: "center",
   },
   notificationLabel: {
-    fontSize: 15,
     color: Colors.text,
   },
   saveBtn: {
     backgroundColor: "#FFFFFF",
     borderRadius: 8,
-    height: 48,
+    height: 52,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 24,
   },
   saveBtnDisabled: {
     opacity: 0.5,
   },
   saveBtnText: {
-    fontSize: 16,
     fontWeight: "600",
     color: "#000000",
   },
   footerSection: {
-    gap: 8,
-    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#27272A",
   },
   signOutBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    backgroundColor: "#18181B",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#27272A",
-    paddingHorizontal: 16,
-    height: 48,
+    gap: 8,
+    paddingVertical: 8,
   },
   signOutText: {
-    fontSize: 15,
     color: Colors.danger,
     fontWeight: "500",
   },
   deleteBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    backgroundColor: "#18181B",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#27272A",
-    paddingHorizontal: 16,
-    height: 48,
+    gap: 8,
+    paddingVertical: 8,
   },
   deleteBtnText: {
-    fontSize: 15,
     color: Colors.danger,
     fontWeight: "500",
   },
   deleteConfirm: {
-    backgroundColor: Colors.danger + "15",
+    backgroundColor: "#18181B",
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.danger + "40",
-    padding: 16,
-    gap: 12,
   },
   deleteConfirmText: {
-    fontSize: 14,
-    color: Colors.danger,
-    fontWeight: "500",
+    color: Colors.text,
   },
   deleteConfirmActions: {
     flexDirection: "row",
-    gap: 12,
   },
   deleteConfirmCancel: {
     flex: 1,
-    backgroundColor: "#18181B",
+    backgroundColor: "#27272A",
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#27272A",
     height: 40,
     justifyContent: "center",
     alignItems: "center",
   },
   deleteConfirmCancelText: {
-    fontSize: 14,
     color: Colors.text,
     fontWeight: "500",
   },
@@ -671,8 +737,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   deleteConfirmDeleteText: {
-    fontSize: 14,
     color: "#FFFFFF",
-    fontWeight: "600",
+    fontWeight: "500",
   },
 });

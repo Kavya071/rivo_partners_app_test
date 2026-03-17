@@ -9,7 +9,6 @@ import {
   Share,
 } from "react-native";
 import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useQuery } from "@tanstack/react-query";
@@ -17,6 +16,8 @@ import { useQuery } from "@tanstack/react-query";
 import Colors from "@/constants/colors";
 import { useConfig } from "@/context/ConfigContext";
 import { getMe } from "@/lib/api";
+import Icon from "@/components/Icon";
+import { useResponsive } from "@/hooks/useResponsive";
 
 function ordinal(n: number): string {
   const s = ["th", "st", "nd", "rd"];
@@ -27,6 +28,7 @@ function ordinal(n: number): string {
 export default function ReferralInfoScreen() {
   const insets = useSafeAreaInsets();
   const config = useConfig();
+  const r = useResponsive();
 
   const { data: agent } = useQuery({
     queryKey: ["agent-me"],
@@ -50,90 +52,93 @@ export default function ReferralInfoScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: r.screenPadding, paddingBottom: r.sectionGap }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          <Icon name="arrow-back" size={20} color="#FFFFFF" />
         </Pressable>
-        <Text style={styles.headerTitle}>How Referrals Work</Text>
+        <Text style={[styles.headerTitle, { fontSize: r.fs(20) }]}>How Referrals Work</Text>
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, {
+          padding: r.screenPadding,
+          paddingBottom: 120,
+        }]}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.duration(500)}>
-          <Text style={styles.title}>
+          <Text style={[styles.title, { fontSize: r.fs(28), marginBottom: r.sp(16) }]}>
             {"Grow your network,\nmultiply your earnings."}
           </Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, { fontSize: r.fs(18), marginBottom: r.sectionGap }]}>
             Our referral program is designed to reward you for bringing
             high-quality agents into the Rivo ecosystem.
           </Text>
 
-          <View style={styles.cardsContainer}>
-            <View style={styles.card}>
+          <View style={[styles.cardsContainer, { gap: r.sectionGap }]}>
+            <View style={[styles.card, { padding: r.cardPadding }]}>
               <View
                 style={[
                   styles.iconCircle,
-                  { backgroundColor: "rgba(0,208,132,0.1)" },
+                  { backgroundColor: "rgba(0,208,132,0.1)", marginBottom: r.iconTextGap },
                 ]}
               >
-                <Ionicons name="people" size={24} color={Colors.primary} />
+                <Icon name="people" size={24} color={Colors.primary} />
               </View>
-              <Text style={styles.cardTitle}>1. Invite Agents</Text>
-              <Text style={styles.cardDesc}>
+              <Text style={[styles.cardTitle, { fontSize: r.fs(20) }]}>1. Invite Agents</Text>
+              <Text style={[styles.cardDesc, { fontSize: r.fs(16) }]}>
                 Share your unique referral link with other real estate agents.
                 When they sign up using your link, they are automatically tagged
                 to your network.
               </Text>
             </View>
 
-            <View style={styles.card}>
+            <View style={[styles.card, { padding: r.cardPadding }]}>
               <View
                 style={[
                   styles.iconCircle,
-                  { backgroundColor: "rgba(59,130,246,0.1)" },
+                  { backgroundColor: "rgba(59,130,246,0.1)", marginBottom: r.iconTextGap },
                 ]}
               >
-                <Ionicons name="briefcase" size={24} color="#3b82f6" />
+                <Icon name="briefcase" size={24} color="#3b82f6" />
               </View>
-              <Text style={styles.cardTitle}>2. They Close Deals</Text>
-              <Text style={styles.cardDesc}>
+              <Text style={[styles.cardTitle, { fontSize: r.fs(20) }]}>2. They Close Deals</Text>
+              <Text style={[styles.cardDesc, { fontSize: r.fs(16) }]}>
                 Once your referred agents start submitting mortgage leads, our
                 team processes them. You can track their progress in your Network
                 tab.
               </Text>
             </View>
 
-            <View style={styles.card}>
+            <View style={[styles.card, { padding: r.cardPadding }]}>
               <View
                 style={[
                   styles.iconCircle,
-                  { backgroundColor: "rgba(168,85,247,0.1)" },
+                  { backgroundColor: "rgba(168,85,247,0.1)", marginBottom: r.iconTextGap },
                 ]}
               >
-                <Ionicons name="flash" size={24} color="#a855f7" />
+                <Icon name="flash" size={24} color="#a855f7" />
               </View>
-              <Text style={styles.cardTitle}>3. Earn Bonuses</Text>
-              <Text style={styles.cardDesc}>
+              <Text style={[styles.cardTitle, { fontSize: r.fs(20) }]}>3. Earn Bonuses</Text>
+              <Text style={[styles.cardDesc, { fontSize: r.fs(16) }]}>
                 You earn a bonus for each of the first {amounts.length}{" "}
                 successful disbursals from every agent you refer.
               </Text>
 
-              <View style={styles.bonusTable}>
+              <View style={[styles.bonusTable, { padding: r.cardPadding, gap: r.sp(14) }]}>
                 {amounts.map((amount, i) => (
                   <View key={i} style={styles.bonusRow}>
-                    <Text style={styles.bonusRowLabel}>
+                    <Text style={[styles.bonusRowLabel, { fontSize: r.fs(14) }]}>
                       {ordinal(i + 1)} Deal
                     </Text>
-                    <Text style={styles.bonusRowValue}>
+                    <Text style={[styles.bonusRowValue, { fontSize: r.fs(15) }]}>
                       AED {amount.toLocaleString()} Bonus
                     </Text>
                   </View>
                 ))}
                 <View style={styles.bonusTotalRow}>
-                  <Text style={styles.bonusTotalLabel}>Total Potential</Text>
-                  <Text style={styles.bonusTotalValue}>
+                  <Text style={[styles.bonusTotalLabel, { fontSize: r.fs(14) }]}>Total Potential</Text>
+                  <Text style={[styles.bonusTotalValue, { fontSize: r.fs(15) }]}>
                     AED {totalPotential.toLocaleString()} per Agent
                   </Text>
                 </View>
@@ -149,6 +154,8 @@ export default function ReferralInfoScreen() {
           {
             paddingBottom:
               insets.bottom + (Platform.OS === "web" ? 34 : 16),
+            paddingHorizontal: r.screenPadding,
+            paddingTop: r.sectionGap,
           },
         ]}
       >
@@ -159,8 +166,8 @@ export default function ReferralInfoScreen() {
             pressed && styles.btnPressed,
           ]}
         >
-          <Ionicons name="share-social" size={20} color="#000000" />
-          <Text style={styles.referBtnText}>Refer now</Text>
+          <Icon name="share-social" size={20} color="#000000" />
+          <Text style={[styles.referBtnText, { fontSize: r.fs(18) }]}>Refer now</Text>
         </Pressable>
       </View>
     </View>
@@ -176,8 +183,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingTop: 12,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
     borderBottomWidth: 1,
     borderBottomColor: "#27272A",
     backgroundColor: "#000000",
@@ -192,36 +197,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerTitle: {
-    fontSize: 20,
     fontWeight: "500",
     color: "#FFFFFF",
   },
-  scrollContent: {
-    padding: 24,
-    paddingBottom: 120,
-  },
+  scrollContent: {},
   title: {
-    fontSize: 28,
     fontWeight: "500",
     color: "#FFFFFF",
-    marginBottom: 16,
     flexShrink: 1,
   },
   subtitle: {
-    fontSize: 18,
     color: "#A1A1AA",
     lineHeight: 28,
-    marginBottom: 32,
   },
-  cardsContainer: {
-    gap: 32,
-  },
+  cardsContainer: {},
   card: {
     backgroundColor: "rgba(24,24,27,0.5)",
     borderWidth: 1,
     borderColor: "#27272A",
     borderRadius: 12,
-    padding: 24,
   },
   iconCircle: {
     width: 48,
@@ -229,16 +223,13 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
   },
   cardTitle: {
-    fontSize: 20,
     fontWeight: "500",
     color: "#FFFFFF",
     marginBottom: 8,
   },
   cardDesc: {
-    fontSize: 16,
     color: "#A1A1AA",
     lineHeight: 26,
   },
@@ -248,8 +239,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#27272A",
-    padding: 16,
-    gap: 12,
   },
   bonusRow: {
     flexDirection: "row",
@@ -257,11 +246,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   bonusRowLabel: {
-    fontSize: 14,
     color: "#A1A1AA",
   },
   bonusRowValue: {
-    fontSize: 15,
     fontWeight: "500",
     color: "#FFFFFF",
     flexShrink: 1,
@@ -276,12 +263,10 @@ const styles = StyleSheet.create({
     borderTopColor: "#27272A",
   },
   bonusTotalLabel: {
-    fontSize: 14,
     fontWeight: "500",
     color: "#00D084",
   },
   bonusTotalValue: {
-    fontSize: 15,
     fontWeight: "700",
     color: "#00D084",
     flexShrink: 1,
@@ -291,8 +276,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 24,
-    paddingTop: 24,
     backgroundColor: "#000000",
     borderTopWidth: 1,
     borderTopColor: "#27272A",
@@ -307,7 +290,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   referBtnText: {
-    fontSize: 18,
     fontWeight: "700",
     color: "#000000",
   },

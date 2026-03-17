@@ -225,3 +225,15 @@ export async function deleteAccount(): Promise<void> {
   await apiFetch("/agents/delete/", { method: "DELETE" });
   await clearToken();
 }
+
+export async function connectOutlook(
+  code: string,
+  redirectUri: string,
+): Promise<AgentProfile> {
+  const res = await apiFetch("/agents/connect-outlook/", {
+    method: "POST",
+    body: JSON.stringify({ code, redirect_uri: redirectUri }),
+  });
+  if (!res.ok) throw new Error("Failed to connect Outlook");
+  return res.json();
+}

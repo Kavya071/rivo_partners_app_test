@@ -11,7 +11,6 @@ import {
   Modal,
 } from "react-native";
 import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import * as Haptics from "expo-haptics";
@@ -21,12 +20,15 @@ import Colors from "@/constants/colors";
 import { COUNTRY_CODES } from "@/constants/api";
 import { ingestClient, getMe } from "@/lib/api";
 import { useConfig } from "@/context/ConfigContext";
+import Icon from "@/components/Icon";
+import { useResponsive } from "@/hooks/useResponsive";
 
 export default function SubmitLeadScreen() {
   const insets = useSafeAreaInsets();
   const webTopPad = Platform.OS === "web" ? 67 : 0;
   const webBottomPad = Platform.OS === "web" ? 34 : 0;
   const config = useConfig();
+  const r = useResponsive();
 
   const { data: agent } = useQuery({
     queryKey: ["agent-me"],
@@ -115,18 +117,18 @@ export default function SubmitLeadScreen() {
         },
       ]}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: r.cardPadding }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={Colors.text} />
+          <Icon name="arrow-back" size={24} color={Colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>New Client</Text>
+        <Text style={[styles.headerTitle, { fontSize: r.fs(17) }]}>New Client</Text>
         <View style={{ width: 44 }} />
       </View>
 
       {numericAmount > 0 && (
-        <View style={styles.commissionBar}>
-          <Text style={styles.commissionLabel}>Estimated Commission</Text>
-          <Text style={styles.commissionValue}>
+        <View style={[styles.commissionBar, { paddingHorizontal: r.screenPadding }]}>
+          <Text style={[styles.commissionLabel, { fontSize: r.fs(14) }]}>Estimated Commission</Text>
+          <Text style={[styles.commissionValue, { fontSize: r.fs(18) }]}>
             AED {commission.toLocaleString("en-AE", { maximumFractionDigits: 0 })}
           </Text>
         </View>
@@ -137,14 +139,19 @@ export default function SubmitLeadScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + webBottomPad + 100 },
+          {
+            paddingHorizontal: r.screenPadding,
+            paddingTop: r.sectionGap,
+            gap: r.sectionGap,
+            paddingBottom: insets.bottom + webBottomPad + 100,
+          },
         ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Full Name</Text>
+          <Text style={[styles.fieldLabel, { fontSize: r.fs(13) }]}>Full Name</Text>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { fontSize: r.fs(15), paddingHorizontal: r.cardPadding }]}
             value={clientName}
             onChangeText={setClientName}
             placeholder="Client's full name"
@@ -154,11 +161,11 @@ export default function SubmitLeadScreen() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Loan Amount (AED)</Text>
+          <Text style={[styles.fieldLabel, { fontSize: r.fs(13) }]}>Loan Amount (AED)</Text>
           <View style={styles.amountInputRow}>
-            <Text style={styles.currencyPrefix}>AED</Text>
+            <Text style={[styles.currencyPrefix, { fontSize: r.fs(15), paddingHorizontal: r.sp(14) }]}>AED</Text>
             <TextInput
-              style={[styles.textInput, styles.amountInput]}
+              style={[styles.textInput, styles.amountInput, { fontSize: r.fs(15), paddingHorizontal: r.cardPadding }]}
               value={loanAmount}
               onChangeText={formatLoanDisplay}
               placeholder="0"
@@ -167,7 +174,7 @@ export default function SubmitLeadScreen() {
             />
           </View>
           {numericAmount > 0 && (
-            <Text style={styles.calcHelper}>
+            <Text style={[styles.calcHelper, { fontSize: r.fs(12) }]}>
               {numericAmount.toLocaleString("en-AE")} x {commissionRate}% = AED{" "}
               {commission.toLocaleString("en-AE", { maximumFractionDigits: 0 })}
             </Text>
@@ -175,22 +182,22 @@ export default function SubmitLeadScreen() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Phone Number</Text>
-          <View style={styles.phoneRow}>
+          <Text style={[styles.fieldLabel, { fontSize: r.fs(13) }]}>Phone Number</Text>
+          <View style={[styles.phoneRow, { gap: r.sp(8) }]}>
             <Pressable
               onPress={() => setShowCountryPicker(true)}
-              style={styles.countryBtn}
+              style={[styles.countryBtn, { paddingHorizontal: r.sp(12) }]}
             >
-              <Text style={styles.countryFlag}>{selectedCountry.flag}</Text>
-              <Text style={styles.countryCode}>{selectedCountry.code}</Text>
-              <Ionicons
+              <Text style={[styles.countryFlag, { fontSize: r.fs(20) }]}>{selectedCountry.flag}</Text>
+              <Text style={[styles.countryCode, { fontSize: r.fs(14) }]}>{selectedCountry.code}</Text>
+              <Icon
                 name="chevron-down"
                 size={14}
                 color={Colors.textMuted}
               />
             </Pressable>
             <TextInput
-              style={[styles.textInput, styles.phoneInput]}
+              style={[styles.textInput, styles.phoneInput, { fontSize: r.fs(15), paddingHorizontal: r.cardPadding }]}
               value={phone}
               onChangeText={(text: string) => {
                 setPhone(text.replace(/\D/g, ""));
@@ -204,31 +211,31 @@ export default function SubmitLeadScreen() {
             />
           </View>
           {phoneBlurred && sanitizedPhone.length > 0 && !isPhoneValid && (
-            <Text style={styles.errorHelper}>
+            <Text style={[styles.errorHelper, { fontSize: r.fs(12) }]}>
               Enter {selectedCountry.digits} digits for{" "}
               {selectedCountry.country}
             </Text>
           )}
           {isSelfReferral && (
-            <Text style={styles.errorHelper}>
+            <Text style={[styles.errorHelper, { fontSize: r.fs(12) }]}>
               You cannot submit yourself as a client.
             </Text>
           )}
           {error ? (
-            <Text style={styles.errorHelper}>{error}</Text>
+            <Text style={[styles.errorHelper, { fontSize: r.fs(12) }]}>{error}</Text>
           ) : null}
         </View>
 
         <Pressable
           onPress={() => setConsentChecked(!consentChecked)}
-          style={styles.consentRow}
+          style={[styles.consentRow, { gap: r.sp(12) }]}
         >
-          <Ionicons
+          <Icon
             name="shield-checkmark"
             size={20}
             color={consentChecked ? Colors.primary : Colors.textMuted}
           />
-          <Text style={styles.consentText}>
+          <Text style={[styles.consentText, { fontSize: r.fs(13) }]}>
             I confirm that I have the client's consent to share their contact
             details for mortgage processing.
           </Text>
@@ -238,7 +245,10 @@ export default function SubmitLeadScreen() {
       <View
         style={[
           styles.submitBar,
-          { paddingBottom: insets.bottom + webBottomPad + 16 },
+          {
+            paddingBottom: insets.bottom + webBottomPad + 16,
+            paddingHorizontal: r.screenPadding,
+          },
         ]}
       >
         <Pressable
@@ -253,7 +263,7 @@ export default function SubmitLeadScreen() {
           {submitting ? (
             <ActivityIndicator color="#000" size="small" />
           ) : (
-            <Text style={styles.submitText}>Submit Client</Text>
+            <Text style={[styles.submitText, { fontSize: r.fs(16) }]}>Submit Client</Text>
           )}
         </Pressable>
       </View>
@@ -271,10 +281,10 @@ export default function SubmitLeadScreen() {
               { paddingBottom: insets.bottom + 20 },
             ]}
           >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Country</Text>
+            <View style={[styles.modalHeader, { paddingHorizontal: r.screenPadding }]}>
+              <Text style={[styles.modalTitle, { fontSize: r.fs(18) }]}>Select Country</Text>
               <Pressable onPress={() => setShowCountryPicker(false)}>
-                <Ionicons name="close" size={24} color={Colors.text} />
+                <Icon name="close" size={24} color={Colors.text} />
               </Pressable>
             </View>
             <FlatList
@@ -290,16 +300,17 @@ export default function SubmitLeadScreen() {
                   }}
                   style={({ pressed }) => [
                     styles.countryItem,
+                    { paddingHorizontal: r.screenPadding },
                     selectedCountry.code === item.code &&
                       styles.countryItemSelected,
                     pressed && { opacity: 0.7 },
                   ]}
                 >
-                  <Text style={styles.countryItemFlag}>{item.flag}</Text>
-                  <Text style={styles.countryItemName}>{item.country}</Text>
-                  <Text style={styles.countryItemCode}>{item.code}</Text>
+                  <Text style={[styles.countryItemFlag, { fontSize: r.fs(24) }]}>{item.flag}</Text>
+                  <Text style={[styles.countryItemName, { fontSize: r.fs(15) }]}>{item.country}</Text>
+                  <Text style={[styles.countryItemCode, { fontSize: r.fs(14) }]}>{item.code}</Text>
                   {selectedCountry.code === item.code && (
-                    <Ionicons
+                    <Icon
                       name="checkmark"
                       size={18}
                       color={Colors.primary}
@@ -324,7 +335,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
@@ -337,14 +347,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 17,
     color: Colors.text,
   },
   commissionBar: {
     backgroundColor: Colors.primary + "10",
     borderBottomWidth: 1,
     borderBottomColor: Colors.primary + "20",
-    paddingHorizontal: 20,
     paddingVertical: 14,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -352,25 +360,18 @@ const styles = StyleSheet.create({
   },
   commissionLabel: {
     fontFamily: "Inter_500Medium",
-    fontSize: 14,
     color: Colors.primary,
   },
   commissionValue: {
     fontFamily: "Inter_700Bold",
-    fontSize: 18,
     color: Colors.primary,
   },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    gap: 22,
-  },
+  scrollContent: {},
   fieldGroup: {
     gap: 6,
   },
   fieldLabel: {
     fontFamily: "Inter_500Medium",
-    fontSize: 13,
     color: Colors.textSecondary,
     marginLeft: 2,
   },
@@ -379,10 +380,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
-    paddingHorizontal: 16,
     height: 48,
     fontFamily: "Inter_400Regular",
-    fontSize: 15,
     color: Colors.text,
   },
   amountInputRow: {
@@ -392,7 +391,6 @@ const styles = StyleSheet.create({
   },
   currencyPrefix: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
     color: Colors.textSecondary,
     backgroundColor: Colors.surface,
     borderWidth: 1,
@@ -400,7 +398,6 @@ const styles = StyleSheet.create({
     borderRightWidth: 0,
     borderTopLeftRadius: 12,
     borderBottomLeftRadius: 12,
-    paddingHorizontal: 14,
     height: 48,
     lineHeight: 48,
     textAlignVertical: "center",
@@ -412,14 +409,12 @@ const styles = StyleSheet.create({
   },
   calcHelper: {
     fontFamily: "Inter_400Regular",
-    fontSize: 12,
     color: Colors.primary,
     marginLeft: 2,
     marginTop: 2,
   },
   phoneRow: {
     flexDirection: "row",
-    gap: 8,
   },
   countryBtn: {
     flexDirection: "row",
@@ -429,15 +424,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
-    paddingHorizontal: 12,
     height: 48,
   },
-  countryFlag: {
-    fontSize: 20,
-  },
+  countryFlag: {},
   countryCode: {
     fontFamily: "Inter_500Medium",
-    fontSize: 14,
     color: Colors.text,
   },
   phoneInput: {
@@ -445,7 +436,6 @@ const styles = StyleSheet.create({
   },
   errorHelper: {
     fontFamily: "Inter_400Regular",
-    fontSize: 12,
     color: Colors.danger,
     marginLeft: 2,
     marginTop: 2,
@@ -453,13 +443,11 @@ const styles = StyleSheet.create({
   consentRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 10,
-    marginTop: 4,
+    marginTop: 8,
   },
   consentText: {
     flex: 1,
     fontFamily: "Inter_400Regular",
-    fontSize: 13,
     color: Colors.textMuted,
     lineHeight: 19,
   },
@@ -468,7 +456,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 20,
     paddingTop: 12,
     backgroundColor: Colors.background,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -490,7 +477,6 @@ const styles = StyleSheet.create({
   },
   submitText: {
     fontFamily: "Inter_700Bold",
-    fontSize: 16,
     color: "#000",
   },
   modalOverlay: {
@@ -500,47 +486,41 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: Colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     maxHeight: "70%",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
   },
   modalTitle: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 17,
     color: Colors.text,
   },
   countryItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
     paddingVertical: 14,
     gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
   },
   countryItemSelected: {
     backgroundColor: Colors.primary + "10",
   },
-  countryItemFlag: {
-    fontSize: 24,
-  },
+  countryItemFlag: {},
   countryItemName: {
     flex: 1,
     fontFamily: "Inter_500Medium",
-    fontSize: 16,
     color: Colors.text,
   },
   countryItemCode: {
     fontFamily: "Inter_400Regular",
-    fontSize: 14,
     color: Colors.textSecondary,
-    marginRight: 8,
   },
 });

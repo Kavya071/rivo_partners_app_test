@@ -1,12 +1,12 @@
 import { router } from "expo-router";
 import { StyleSheet, Text, View, Pressable } from "react-native";
-import { Feather } from "@expo/vector-icons";
 import Colors from "@/constants/colors";
+import Icon from "@/components/Icon";
 
 export default function NotFoundScreen() {
   return (
     <View style={styles.container}>
-      <Feather name="alert-circle" size={40} color={Colors.textMuted} />
+      <Icon name="alert-circle" size={40} color={Colors.textMuted} />
       <Text style={styles.title}>Page not found</Text>
       <Pressable
         onPress={() => router.replace("/")}

@@ -11,7 +11,6 @@ import {
   Pressable,
   TouchableOpacity,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -19,6 +18,8 @@ import { router } from "expo-router";
 import Colors from "@/constants/colors";
 import { getClients, ClientRecord } from "@/lib/api";
 import { ClientStatus } from "@/constants/api";
+import Icon from "@/components/Icon";
+import { useResponsive } from "@/hooks/useResponsive";
 
 const TAB_BAR_HEIGHT = 84;
 
@@ -57,35 +58,35 @@ function formatDate(dateStr: string): string {
   });
 }
 
-function ClientRow({ item, isLast }: { item: ClientRecord; isLast: boolean }) {
+function ClientRow({ item, isLast, r }: { item: ClientRecord; isLast: boolean; r: ReturnType<typeof useResponsive> }) {
   const commissionValue =
     item.commission_amount != null
       ? item.commission_amount
       : item.estimated_commission ?? 0;
 
   return (
-    <View style={[styles.row, isLast && { borderBottomWidth: 0 }]}>
+    <View style={[styles.row, { paddingHorizontal: r.screenPadding, paddingVertical: r.sp(18) }, isLast && { borderBottomWidth: 0 }]}>
       <View style={styles.rowTop}>
         <View style={styles.rowTopLeft}>
-          <Text style={styles.clientName} numberOfLines={1}>
+          <Text style={[styles.clientName, { fontSize: r.fs(18) }]} numberOfLines={1}>
             {item.client_name}
           </Text>
-          <Text style={styles.clientDate}>{formatDate(item.created_at)}</Text>
+          <Text style={[styles.clientDate, { fontSize: r.fs(12) }]}>{formatDate(item.created_at)}</Text>
         </View>
-        <Text style={[styles.statusLabel, { color: getStatusColor(item.status) }]}>
+        <Text style={[styles.statusLabel, { color: getStatusColor(item.status), fontSize: r.fs(12) }]}>
           {getStatusLabel(item.status)}
         </Text>
       </View>
       <View style={styles.rowBottom}>
         <View>
-          <Text style={styles.fieldLabel}>Loan Amount</Text>
-          <Text style={styles.loanValue}>
+          <Text style={[styles.fieldLabel, { fontSize: r.fs(12) }]}>Loan Amount</Text>
+          <Text style={[styles.loanValue, { fontSize: r.fs(16) }]}>
             AED {(item.expected_mortgage_amount ?? 0).toLocaleString("en-AE")}
           </Text>
         </View>
         <View style={{ alignItems: "flex-end" as const }}>
-          <Text style={styles.fieldLabel}>Est. Commission</Text>
-          <Text style={styles.commissionValue}>
+          <Text style={[styles.fieldLabel, { fontSize: r.fs(12) }]}>Est. Commission</Text>
+          <Text style={[styles.commissionValue, { fontSize: r.fs(18) }]}>
             AED {commissionValue.toLocaleString("en-AE")}
           </Text>
         </View>
@@ -96,6 +97,7 @@ function ClientRow({ item, isLast }: { item: ClientRecord; isLast: boolean }) {
 
 export default function ClientsScreen() {
   const insets = useSafeAreaInsets();
+  const r = useResponsive();
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -132,11 +134,15 @@ export default function ClientsScreen() {
       <View
         style={[
           styles.headerSection,
-          { paddingTop: insets.top > 0 ? insets.top : 48 },
+          {
+            paddingTop: insets.top > 0 ? insets.top : 48,
+            paddingHorizontal: r.screenPadding,
+            paddingBottom: r.sp(20),
+          },
         ]}
       >
-        <View style={styles.titleRow}>
-          <Text style={styles.pageTitle}>Clients</Text>
+        <View style={[styles.titleRow, { marginBottom: r.sp(16) }]}>
+          <Text style={[styles.pageTitle, { fontSize: r.fs(30) }]}>Clients</Text>
           <Pressable
             onPress={() => router.push("/submit-lead")}
             style={({ pressed }) => [
@@ -144,18 +150,18 @@ export default function ClientsScreen() {
               pressed && { opacity: 0.8 },
             ]}
           >
-            <Text style={styles.addClientBtnText}>Add Client</Text>
+            <Text style={[styles.addClientBtnText, { fontSize: r.fs(14) }]}>Add Client</Text>
           </Pressable>
         </View>
-        <View style={styles.searchRow}>
-          <Ionicons
+        <View style={[styles.searchRow, { paddingHorizontal: r.sp(12) }]}>
+          <Icon
             name="search"
             size={18}
             color={Colors.textMuted}
             style={styles.searchIcon}
           />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { fontSize: r.fs(15) }]}
             placeholder="Search clients..."
             placeholderTextColor={Colors.textMuted}
             value={search}
@@ -169,7 +175,7 @@ export default function ClientsScreen() {
                 setDebouncedSearch("");
               }}
             >
-              <Ionicons
+              <Icon
                 name="close"
                 size={18}
                 color={Colors.textMuted}
@@ -191,10 +197,10 @@ export default function ClientsScreen() {
             item.id?.toString() ?? idx.toString()
           }
           renderItem={({ item, index }) => (
-            <ClientRow item={item} isLast={index === clients.length - 1} />
+            <ClientRow item={item} isLast={index === clients.length - 1} r={r} />
           )}
           contentContainerStyle={{
-            paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 20,
+            paddingBottom: TAB_BAR_HEIGHT + insets.bottom + r.sp(20),
           }}
           showsVerticalScrollIndicator={false}
           scrollEnabled={clients.length > 0}
@@ -207,8 +213,8 @@ export default function ClientsScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>No clients yet.</Text>
-              <Text style={styles.emptyText}>
+              <Text style={[styles.emptyTitle, { fontSize: r.fs(16) }]}>No clients yet.</Text>
+              <Text style={[styles.emptyText, { fontSize: r.fs(14) }]}>
                 Submit your first client to start earning
               </Text>
             </View>
@@ -231,8 +237,6 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     backgroundColor: "#000000",
-    paddingHorizontal: 24,
-    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#27272A",
   },
@@ -240,10 +244,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
   },
   pageTitle: {
-    fontSize: 30,
     fontWeight: "500",
     color: Colors.text,
   },
@@ -254,7 +256,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   addClientBtnText: {
-    fontSize: 14,
     fontWeight: "600",
     color: "#000000",
   },
@@ -263,7 +264,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#18181B",
     borderRadius: 12,
-    paddingHorizontal: 12,
     height: 48,
   },
   searchIcon: {
@@ -271,7 +271,6 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
     color: Colors.text,
     height: 48,
   },
@@ -279,8 +278,6 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   row: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#27272A",
   },
@@ -295,18 +292,15 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   clientName: {
-    fontSize: 18,
     fontWeight: "500",
     color: Colors.text,
     flexShrink: 1,
   },
   clientDate: {
-    fontSize: 12,
     color: Colors.textMuted,
     marginTop: 4,
   },
   statusLabel: {
-    fontSize: 12,
     fontWeight: "500",
     letterSpacing: 0.5,
     flexShrink: 1,
@@ -317,21 +311,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginTop: 4,
+    marginTop: 8,
   },
   fieldLabel: {
-    fontSize: 12,
     color: Colors.textMuted,
     marginBottom: 2,
   },
   loanValue: {
-    fontSize: 16,
     fontWeight: "500",
     color: "#D4D4D8",
     flexShrink: 1,
   },
   commissionValue: {
-    fontSize: 18,
     fontWeight: "500",
     color: "#FFFFFF",
   },
@@ -342,11 +333,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyTitle: {
-    fontSize: 16,
     color: "#71717A",
   },
   emptyText: {
-    fontSize: 14,
     color: "#71717A",
     textAlign: "center",
   },

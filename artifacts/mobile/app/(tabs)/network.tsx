@@ -10,7 +10,6 @@ import {
   RefreshControl,
   Animated as RNAnimated,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
@@ -20,6 +19,8 @@ import { router } from "expo-router";
 import Colors from "@/constants/colors";
 import { getNetwork, ReferredAgent } from "@/lib/api";
 import { useConfig } from "@/context/ConfigContext";
+import Icon from "@/components/Icon";
+import { useResponsive } from "@/hooks/useResponsive";
 
 const TAB_BAR_HEIGHT = 84;
 
@@ -78,6 +79,7 @@ function SkeletonRow() {
 export default function NetworkScreen() {
   const insets = useSafeAreaInsets();
   const config = useConfig();
+  const r = useResponsive();
   const [copyLabel, setCopyLabel] = useState("Tap to copy link");
 
   const {
@@ -119,7 +121,6 @@ export default function NetworkScreen() {
     try {
       await Share.share({ message });
     } catch (_e) {
-      // user cancelled share
     }
   };
 
@@ -149,11 +150,15 @@ export default function NetworkScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + 48 }]}>
-        <Text style={styles.pageTitle}>My network</Text>
+      <View style={[styles.header, {
+        paddingTop: insets.top > 0 ? insets.top + r.sp(16) : 48,
+        paddingHorizontal: r.screenPadding,
+        paddingBottom: r.sp(28),
+      }]}>
+        <Text style={[styles.pageTitle, { fontSize: r.fs(30), marginBottom: r.sectionGap }]}>My network</Text>
 
-        <Text style={styles.codeLabel}>Your Referral Code</Text>
-        <Text style={styles.codeText}>{referralCode}</Text>
+        <Text style={[styles.codeLabel, { fontSize: r.fs(14) }]}>Your Referral Code</Text>
+        <Text style={[styles.codeText, { fontSize: r.fs(28), marginBottom: r.sp(20) }]}>{referralCode}</Text>
 
         <Pressable
           onPress={handleShare}
@@ -162,46 +167,47 @@ export default function NetworkScreen() {
             pressed && styles.btnPressed,
           ]}
         >
-          <Ionicons name="share-social-outline" size={20} color="black" />
-          <Text style={styles.shareBtnText}>Invite your network</Text>
+          <Icon name="share-social-outline" size={20} color="black" />
+          <Text style={[styles.shareBtnText, { fontSize: r.fs(16) }]}>Invite your network</Text>
         </Pressable>
 
         <Pressable
           onPress={handleCopy}
           style={({ pressed }) => [
             styles.copyRow,
+            { marginTop: r.sp(16) },
             pressed && { opacity: 0.6 },
           ]}
         >
-          <Ionicons name="copy-outline" size={16} color="#A1A1AA" />
-          <Text style={styles.copyRowText}>{copyLabel}</Text>
+          <Icon name="copy-outline" size={16} color="#A1A1AA" />
+          <Text style={[styles.copyRowText, { fontSize: r.fs(14) }]}>{copyLabel}</Text>
         </Pressable>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { marginTop: r.sp(20) }]} />
 
         <Pressable
           onPress={() => router.push("/referral-info")}
-          style={styles.knowMoreRow}
+          style={[styles.knowMoreRow, { marginTop: r.sp(16) }]}
         >
-          <Text style={styles.knowMoreText}>
+          <Text style={[styles.knowMoreText, { fontSize: r.fs(14) }]}>
             Know more about the referral program{" "}
           </Text>
-          <Ionicons name="chevron-forward" size={16} color="#00D084" />
+          <Icon name="chevron-forward" size={16} color="#00D084" />
         </Pressable>
 
         <Pressable
           onPress={() => router.push("/terms")}
-          style={styles.knowMoreRow}
+          style={[styles.knowMoreRow, { marginTop: r.sp(16) }]}
         >
-          <Text style={styles.knowMoreText}>Read full T&Cs</Text>
-          <Ionicons name="chevron-forward" size={16} color={Colors.primary} />
+          <Text style={[styles.knowMoreText, { fontSize: r.fs(14) }]}>Read full T&Cs</Text>
+          <Icon name="chevron-forward" size={16} color={Colors.primary} />
         </Pressable>
       </View>
 
       <ScrollView
         style={styles.scrollBody}
         contentContainerStyle={{
-          paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 96,
+          paddingBottom: TAB_BAR_HEIGHT + insets.bottom + r.sp(96),
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -212,24 +218,24 @@ export default function NetworkScreen() {
           />
         }
       >
-        <View style={styles.body}>
-          <Text style={styles.sectionTitle}>How it works</Text>
-          <View style={styles.stepsContainer}>
+        <View style={[styles.body, { paddingHorizontal: r.screenPadding, paddingTop: r.sectionGap }]}>
+          <Text style={[styles.sectionTitle, { fontSize: r.fs(18), marginBottom: r.sp(16) }]}>How it works</Text>
+          <View style={[styles.stepsContainer, { marginBottom: r.sp(20) }]}>
             <View style={styles.connectingLine} />
             {howItWorks.map((item, i) => (
-              <View key={i} style={styles.stepRow}>
+              <View key={i} style={[styles.stepRow, { gap: r.iconTextGap, marginBottom: r.sp(20) }]}>
                 <View style={item.circleStyle}>
                   <Text style={item.numberStyle}>{item.step}</Text>
                 </View>
                 <View style={styles.stepContent}>
-                  <Text style={styles.stepTitle}>{item.title}</Text>
-                  <Text style={styles.stepDesc}>{item.desc}</Text>
+                  <Text style={[styles.stepTitle, { fontSize: r.fs(15) }]}>{item.title}</Text>
+                  <Text style={[styles.stepDesc, { fontSize: r.fs(13) }]}>{item.desc}</Text>
                 </View>
               </View>
             ))}
           </View>
 
-          <Text style={styles.termsNote}>
+          <Text style={[styles.termsNote, { fontSize: r.fs(12), marginBottom: r.sectionGap }]}>
             *The referral bonus is subject to the successful disbursal of the
             mortgage. Rivo reserves the right to modify or cancel the referral
             program at any time.{" "}
@@ -241,9 +247,9 @@ export default function NetworkScreen() {
             </Text>
           </Text>
 
-          <View style={styles.networkHeader}>
-            <Ionicons name="people" size={20} color="white" />
-            <Text style={styles.sectionTitle}>Your Network</Text>
+          <View style={[styles.networkHeader, { gap: r.sp(12), marginBottom: r.sp(16) }]}>
+            <Icon name="people" size={20} color="white" />
+            <Text style={[styles.sectionTitle, { fontSize: r.fs(18), marginBottom: 0 }]}>Your Network</Text>
           </View>
 
           {isLoading ? (
@@ -252,7 +258,7 @@ export default function NetworkScreen() {
               <SkeletonRow />
             </>
           ) : referredAgents.length === 0 ? (
-            <Text style={styles.emptyText}>
+            <Text style={[styles.emptyText, { fontSize: r.fs(14) }]}>
               No agents in your network yet. Share your link to start earning
               bonuses.
             </Text>
@@ -262,12 +268,13 @@ export default function NetworkScreen() {
                 key={agent.id}
                 style={[
                   styles.agentRow,
+                  { paddingVertical: r.sp(14) },
                   agent.deals_count === 0 && { opacity: 0.5 },
                 ]}
               >
                 <View style={styles.agentInfo}>
-                  <Text style={styles.agentName} numberOfLines={1}>{agent.name || "Agent"}</Text>
-                  <Text style={styles.agentStat}>
+                  <Text style={[styles.agentName, { fontSize: r.fs(15) }]} numberOfLines={1}>{agent.name || "Agent"}</Text>
+                  <Text style={[styles.agentStat, { fontSize: r.fs(12) }]}>
                     Joined {formatDate(agent.created_at)} &middot;{" "}
                     {agent.deals_count}/
                     {bonusSummary?.max_bonuses ?? referrerBonuses.length} Deals
@@ -277,6 +284,7 @@ export default function NetworkScreen() {
                   <Text
                     style={[
                       styles.bonusValue,
+                      { fontSize: r.fs(16) },
                       agent.bonus_earned > 0
                         ? { color: "#00D084" }
                         : { color: "#71717A" },
@@ -284,7 +292,7 @@ export default function NetworkScreen() {
                   >
                     +AED {agent.bonus_earned}
                   </Text>
-                  <Text style={styles.bonusLabel}>BONUS</Text>
+                  <Text style={[styles.bonusLabel, { fontSize: r.fs(10) }]}>BONUS</Text>
                 </View>
               </View>
             ))
@@ -302,31 +310,24 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: "#000000",
-    paddingBottom: 32,
-    paddingHorizontal: 24,
     borderBottomWidth: 1,
     borderBottomColor: "#27272A",
     alignItems: "center",
   },
   pageTitle: {
     fontFamily: "Inter_500Medium",
-    fontSize: 30,
     color: Colors.text,
     textAlign: "center",
-    marginBottom: 24,
   },
   codeLabel: {
     fontFamily: "Inter_500Medium",
-    fontSize: 14,
     color: Colors.textSecondary,
     marginBottom: 8,
   },
   codeText: {
     fontFamily: "Inter_500Medium",
-    fontSize: 28,
     color: Colors.text,
     letterSpacing: 3,
-    marginBottom: 20,
     flexShrink: 1,
   },
   shareBtn: {
@@ -341,7 +342,6 @@ const styles = StyleSheet.create({
   },
   shareBtnText: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 16,
     color: "black",
   },
   btnPressed: {
@@ -352,47 +352,36 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 16,
   },
   copyRowText: {
     fontFamily: "Inter_400Regular",
-    fontSize: 14,
     color: "#A1A1AA",
   },
   divider: {
     width: "100%",
     height: StyleSheet.hairlineWidth,
     backgroundColor: "#27272A",
-    marginTop: 20,
   },
   knowMoreRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 16,
     flexWrap: "wrap",
   },
   knowMoreText: {
     fontFamily: "Inter_500Medium",
-    fontSize: 14,
     color: "#00D084",
     flexShrink: 1,
   },
   scrollBody: {
     flex: 1,
   },
-  body: {
-    paddingHorizontal: 24,
-    paddingTop: 28,
-  },
+  body: {},
   sectionTitle: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 18,
     color: Colors.text,
-    marginBottom: 16,
   },
   stepsContainer: {
     position: "relative",
-    marginBottom: 20,
   },
   connectingLine: {
     position: "absolute",
@@ -405,8 +394,6 @@ const styles = StyleSheet.create({
   stepRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 14,
-    marginBottom: 20,
   },
   stepCircle: {
     width: 32,
@@ -440,21 +427,17 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
     color: Colors.text,
   },
   stepDesc: {
     fontFamily: "Inter_400Regular",
-    fontSize: 13,
     color: Colors.textSecondary,
     lineHeight: 19,
   },
   termsNote: {
     fontFamily: "Inter_400Regular",
-    fontSize: 12,
     color: "#71717A",
     lineHeight: 18,
-    marginBottom: 28,
   },
   termsLink: {
     color: "#A1A1AA",
@@ -463,19 +446,16 @@ const styles = StyleSheet.create({
   networkHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 16,
+    marginTop: 8,
   },
   emptyText: {
     fontFamily: "Inter_400Regular",
-    fontSize: 14,
     color: Colors.textMuted,
     lineHeight: 20,
   },
   agentRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#27272A",
   },
@@ -485,13 +465,11 @@ const styles = StyleSheet.create({
   },
   agentName: {
     fontFamily: "Inter_600SemiBold",
-    fontSize: 15,
     color: Colors.text,
     flexShrink: 1,
   },
   agentStat: {
     fontFamily: "Inter_400Regular",
-    fontSize: 12,
     color: "#71717A",
   },
   agentBonus: {
@@ -499,37 +477,34 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   bonusValue: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 14,
+    fontFamily: "Inter_700Bold",
   },
   bonusLabel: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 11,
+    fontFamily: "Inter_500Medium",
     color: "#71717A",
-    textTransform: "uppercase",
+    letterSpacing: 1,
   },
   skeletonRow: {
     flexDirection: "row",
-    alignItems: "center",
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#27272A",
   },
   skeletonName: {
     width: 120,
-    height: 14,
+    height: 16,
     borderRadius: 4,
     backgroundColor: "#27272A",
   },
   skeletonStat: {
-    width: 180,
-    height: 10,
+    width: 160,
+    height: 12,
     borderRadius: 4,
     backgroundColor: "#27272A",
   },
   skeletonBonus: {
-    width: 60,
-    height: 14,
+    width: 80,
+    height: 16,
     borderRadius: 4,
     backgroundColor: "#27272A",
   },
