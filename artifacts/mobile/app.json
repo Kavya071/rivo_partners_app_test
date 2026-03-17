@@ -14,9 +14,17 @@
       "backgroundColor": "#000000"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.rivopartners.mobile",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
     },
-    "android": {},
+    "android": {
+      "package": "com.rivopartners.mobile"
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -28,11 +36,25 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#00D084",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "514c5ebf-4e3f-47cd-a553-3566c740f91f"
+      }
+    },
+    "owner": "kavyabhardwaj"
   }
 }

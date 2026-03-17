@@ -21,7 +21,9 @@ import Colors from "@/constants/colors";
 import { getMe, updateProfile, logout, deleteAccount, connectOutlook } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import Icon from "@/components/Icon";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useResponsive } from "@/hooks/useResponsive";
+import { useNotifications } from "@/hooks/useNotifications";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -68,7 +70,7 @@ export default function ProfileScreen() {
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(false);
+  const { pushEnabled, togglePush } = useNotifications();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [connectingGoogle, setConnectingGoogle] = useState(false);
   const [connectingOutlookState, setConnectingOutlookState] = useState(false);
@@ -180,20 +182,32 @@ export default function ProfileScreen() {
     }
   };
 
+  const cleanupPushToken = async () => {
+    const token = await AsyncStorage.getItem("rivo_push_token");
+    if (token) {
+      try {
+        const { unregisterTokenFromBackend } = await import("@/lib/notifications");
+        await unregisterTokenFromBackend(token);
+      } catch {}
+      await AsyncStorage.removeItem("rivo_push_token");
+      await AsyncStorage.removeItem("rivo_push_registered");
+    }
+  };
+
   const handleSignOut = async () => {
+    await cleanupPushToken();
     try {
       logout().catch(() => {});
     } catch (_e) {}
     await signOut();
-    router.replace("/");
   };
 
   const handleDelete = async () => {
+    await cleanupPushToken();
     try {
       await deleteAccount();
     } catch (_e) {}
     await signOut();
-    router.replace("/");
   };
 
   if (isLoading) {
@@ -442,7 +456,7 @@ export default function ProfileScreen() {
           <Text style={[styles.notificationLabel, { fontSize: r.fs(15) }]}>Push Notifications</Text>
           <Switch
             value={pushEnabled}
-            onValueChange={setPushEnabled}
+            onValueChange={togglePush}
             trackColor={{ false: "#3F3F46", true: "#00D084" }}
             thumbColor="#FFFFFF"
           />

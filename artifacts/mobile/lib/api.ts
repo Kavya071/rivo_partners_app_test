@@ -15,7 +15,7 @@ export async function clearToken(): Promise<void> {
   await AsyncStorage.removeItem(TOKEN_KEY);
 }
 
-async function apiFetch(
+export async function apiFetch(
   path: string,
   options: RequestInit = {},
 ): Promise<Response> {

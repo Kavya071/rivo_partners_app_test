@@ -1,10 +1,22 @@
-import { Tabs } from "expo-router";
-import React from "react";
+import { Tabs, useRouter } from "expo-router";
+import React, { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 
 import Icon from "@/components/Icon";
+import { useAuth } from "@/context/AuthContext";
 
 export default function TabLayout() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/index");
+    }
+  }, [isAuthenticated, isLoading]);
+
+  if (isLoading || !isAuthenticated) return null;
+
   return (
     <Tabs
       screenOptions={{
@@ -65,6 +77,12 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Icon name={focused ? "person" : "person-outline"} size={24} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="index"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

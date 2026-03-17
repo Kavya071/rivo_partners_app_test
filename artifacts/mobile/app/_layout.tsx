@@ -14,10 +14,19 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import * as Notifications from "expo-notifications";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ConfigProvider } from "@/context/ConfigContext";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 SplashScreen.preventAutoHideAsync();
 
@@ -59,10 +68,30 @@ function NavGuard() {
   return null;
 }
 
+function NotificationListener() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data;
+        if (data?.type === "referral_signup") router.push("/(tabs)/network");
+        else if (data?.type === "referral_bonus") router.push("/referral-bonus");
+        else if (data?.type === "deal_disbursed") router.push("/(tabs)/clients");
+        else if (data?.type === "status_update") router.push("/(tabs)/clients");
+      },
+    );
+    return () => subscription.remove();
+  }, []);
+
+  return null;
+}
+
 function RootLayoutNav() {
   return (
     <>
     <NavGuard />
+    <NotificationListener />
     <Stack
       screenOptions={{
         headerShown: false,
